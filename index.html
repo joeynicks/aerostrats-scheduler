@@ -334,6 +334,7 @@ tr.tot td{font-weight:600;background:var(--sunk)}
 tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
 .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--sunk);border:1px solid var(--line)}
 .tag.dual{color:var(--dual)} .tag.solo{color:var(--solo)} .tag.tour{color:var(--tour)} .tag.ground{color:var(--ground)} .tag.mx{color:var(--mx)} .tag.job{color:var(--job)}
+.rb-note{text-decoration:none}
 .later{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.1);color:#9fb0c1;margin-left:auto}
 .later-banner{border:1px dashed var(--line);border-radius:12px;padding:12px 14px;color:var(--muted);font-size:13px;margin-bottom:16px;background:var(--surface)}
 .strike{text-decoration:line-through;color:var(--muted)}
@@ -580,7 +581,7 @@ let view="today", selStudent=null, selAc="N7187K", payWho="all";
 
 function renderNav(){
   $("side").innerHTML=`<div class="brand">AS<span>&amp;</span>S</div><div class="brand-sub">${ROLE==="owner"?"Owner console":ROLE==="instructor"?"Pilot":"Operations"} · Cullman base</div>
-  <div class="rolebox"><span>Demo · viewing as</span>${D.select()}<button class="rb-reset" data-demo-reset>Reset demo</button></div>
+  <div class="rolebox"><span>Demo · viewing as</span>${D.select()}<button class="rb-reset" data-demo-reset>Reset demo</button>${D.noteLink?D.noteLink("rb-reset rb-note"):""}</div>
   <nav class="nav">${NAVX.map(([g,items])=>`<div class="grp">${g}</div>${items.map(([k,l])=>`<button data-nav="${k}" ${view===k?'aria-current="page"':""}><svg viewBox="0 0 24 24">${I[k]}</svg>${l}${k==="today"&&ALERTS.length?`<span class="badge">${ALERTS.length}</span>`:""}</button>`).join("")}`).join("")}</nav>
   <div class="side-foot"><b>${ME}</b>${ROLE_LBL} · <span class="sample" style="font-size:10px;padding:1px 6px">Sample data</span></div>`;
   D.wire($("side"));

@@ -79,6 +79,11 @@
       Object.entries(cart||{}).forEach(([id,q])=>{const it=L.find(x=>x.id===id);if(!it||!(q>0))return;const amt=Math.round(it.p*q*100)/100;sub+=amt;if(it.tax)tax+=amt*r;lines.push([it.n,q,amt])});
       tax=Math.round(tax*100)/100;sub=Math.round(sub*100)/100;return {lines,sub,tax,total:Math.round((sub+tax)*100)/100}},
     recordSale(s){DEMO.push("sales",Object.assign({id:"s"+Date.now(),at:new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})},s))},
+    /* opens a new GitHub issue with the page, role and time filled in */
+    issueUrl(){const pg=(location.pathname.split("/").pop()||"index.html")+(location.hash||""),r=(ROLES.find(x=>x.id===DEMO.role())||{}).label||"",t=new Date().toLocaleString();
+      const body="**What happened:**\n\n\n**What I expected:**\n\n\n---\nPage: "+pg+"\nViewing as: "+r+"\nTime: "+t+"\nScreen: "+innerWidth+"\u00d7"+innerHeight;
+      return "https://github.com/joeynicks/aerostrats-scheduler/issues/new?body="+encodeURIComponent(body)},
+    noteLink(cls){return `<a class="${cls}" href="#" target="_blank" rel="noopener" data-demo-note>Note an issue</a>`},
     get(k,def){const d=load();return k in d?d[k]:def},
     set(k,v){const d=load();d[k]=v;save(d)},
     push(k,v){const d=load();(d[k]=d[k]||[]).push(v);save(d)},
@@ -92,7 +97,7 @@
     /* thin bar for the student and tour pages */
     bar(){
       const el=document.createElement("div");el.className="demo-bar";el.setAttribute("role","region");el.setAttribute("aria-label","Demo controls");
-      el.innerHTML=`<span class="db-k">Demo \u00b7 viewing as</span>${DEMO.select()}<a class="db-a" href="index.html" data-demo-home>Main console</a><button type="button" class="db-a" data-demo-reset>Reset demo</button>`;
+      el.innerHTML=`<span class="db-k">Demo \u00b7 viewing as</span>${DEMO.select()}${DEMO.noteLink("db-a")}<a class="db-a" href="index.html" data-demo-home>Main console</a><button type="button" class="db-a" data-demo-reset>Reset demo</button>`;
       document.body.prepend(el);
       const st=document.createElement("style");st.textContent=`.demo-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#0f1d2b;color:#c9d5e1;font:13px "IBM Plex Sans",system-ui,sans-serif;
         padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -105,6 +110,7 @@
     },
     wire(root){
       root.querySelectorAll(".demo-role").forEach(s=>s.addEventListener("change",()=>DEMO.go(s.value)));
+      root.querySelectorAll("[data-demo-note]").forEach(n=>n.addEventListener("click",()=>{n.href=DEMO.issueUrl()}));
       root.querySelectorAll("[data-demo-reset]").forEach(b=>b.addEventListener("click",()=>DEMO.reset()));
       root.querySelectorAll("[data-demo-home]").forEach(a=>a.addEventListener("click",e=>{if(DEMO.role()==="student")DEMO.set("role","owner")}));
     }
