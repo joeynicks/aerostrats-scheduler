@@ -219,6 +219,7 @@ body.tl-dragging{user-select:none;-webkit-user-select:none}
 .tl-100 i{display:block;height:100%;background:var(--ok)} .tl-100.warn i{background:var(--warn)} .tl-100.bad i{background:var(--bad)}
 .tl-label .tl-100s{font:400 12px var(--body);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .tl-label .us{display:none}
+.gnd{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:var(--bad);border-radius:4px;padding:0 5px;vertical-align:2px}
 .tl-label .tl-ik{font-size:10.5px;font-weight:600;letter-spacing:.02em;color:var(--muted);white-space:nowrap} .tl-label .tl-ik.warn{color:var(--warn)} .tl-label .tl-ik.bad{color:var(--bad)} .tl-label .tl-100s.warn{color:var(--warn);font-weight:600} .tl-label .tl-100s.bad{color:var(--bad);font-weight:600}
 .tl-label .tl-100t{font-size:11px;color:var(--muted)} .tl-label .tl-100t.warn{color:var(--warn);font-weight:600} .tl-label .tl-100t.bad{color:var(--bad);font-weight:600}
 .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -429,7 +430,7 @@ const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],MON=["Jan","Feb","Mar","Ap
 const fmtDate=d=>DOW[d.getDay()]+", "+MON[d.getMonth()]+" "+d.getDate();
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const fmtH=h=>{if(h>=24)h-=24;const hr=Math.floor(h),m=Math.round((h-hr)*60);return ((hr+11)%12+1)+":"+String(m).padStart(2,"0")+(hr<12?" AM":" PM")};
-const NOW=10+40/60; // demo clock: 10:40 AM
+const NOW=window.DEMO&&DEMO.now?DEMO.now():10+40/60; // real clock (hours since midnight)
 const TL0=0,TL1=24,TLS=TL1-TL0, DAY0=7; // timeline covers the whole day; it opens at the current time
 const tlPct=h=>(h-TL0)/TLS*100;
 
@@ -486,11 +487,14 @@ function buildAlerts(){
   if(docs.spc==="review")live.push({id:"l1",roles:"owner",lvl:"warn",t:"Document to review: J. Snuffy",d:"Uploaded a student pilot certificate. He needs it approved before his first solo (F18).",acts:["Approve document","Open student"]});
   const tour=D.get("tour",null);
   if(tour&&tour.status==="dispatched")live.push({id:"l2",roles:"owner desk",lvl:"info",t:"1:00 PM tour block is flying",d:`R. Ellis dispatched N931QA at ${tour.out||"—"}. ${tour.loads} loads checked in, ${tour.flown} flown, ${money(tour.rev)} collected.`,acts:["Open tours"]});
-  const base=BASE_ALERTS.filter(a=>!(a.id==="a1"&&(D.get("bookState",{}).b1||{}).st==="done")).filter(a=>!(a.id==="a2"&&(D.get("fratOk",false)||(tour&&tour.status!=="pending")||(D.get("bookState",{}).pmTour||{}).st==="cancelled")));
+  const base=BASE_ALERTS.filter(a=>!(a.id==="a1"&&((D.get("bookState",{}).b1||{}).st==="done"||(BOOK.find(x=>x.id==="b1")||{}).st!=="overdue"))).filter(a=>!(a.id==="a2"&&(D.get("fratOk",false)||(tour&&tour.status!=="pending")||(D.get("bookState",{}).pmTour||{}).st==="cancelled")));
+  const RM=D.get("reminded",{});
+  AIRCRAFT.forEach(a=>{const g=grounded(a.tail);if(g)live.push({id:"g"+a.tail,roles:"owner instructor desk",lvl:"bad",t:a.tail+" is grounded",d:g.why+". Dispatch is blocked until it's returned to service.",acts:["View aircraft"]})});
   const rank={bad:0,warn:1,info:2};
-  return live.concat(base).filter(a=>a.roles.split(" ").includes(ROLE)&&!dismissed.has(a.id)).sort((x,y)=>rank[x.lvl]-rank[y.lvl]);
+  return live.concat(base).filter(a=>!(a.id==="a4"&&RM["M. Houston"])&&!(a.id==="a5"&&RM["Sam Patel"])&&!(a.id==="a6"&&D.get("sqCleared",{}).sq0)).filter(a=>a.roles.split(" ").includes(ROLE)&&!dismissed.has(a.id)).sort((x,y)=>rank[x.lvl]-rank[y.lvl]);
 }
 function applyLive(){
+  applyBiz();RATE_STU=RATE_NOW;
   const sr=D.get("staffRates",null);if(sr)sr.forEach((r,i)=>{if(STAFF[i])STAFF[i].rate=r});
   const bs=D.get("bookState",{});BOOK.forEach(b=>{if(bs[b.id])Object.assign(b,bs[b.id])});
   const at=D.get("acTimes",{});AIRCRAFT.forEach(a=>{if(at[a.tail])Object.assign(a,at[a.tail])});
@@ -507,6 +511,8 @@ function applyLive(){
   ls.forEach(l=>{if(!PAY.some(x=>x.live===l.at+l.code))PAY.push({live:l.at+l.code,d:0,who:l.instr,stu:"J. Snuffy",l:l.code,fl:l.fl,gr:l.gr,waived:l.rate===0})});
   if(tour&&tour.status==="closed"&&!PAY.some(x=>x.live==="pmTour"))PAY.push({live:"pmTour",d:0,who:"R. Ellis",stu:`Tour block · ${tour.loads} loads`,l:"Tour",fl:tour.hobbs||0,gr:0,waived:false});
   const docs=D.get("docs",{});STUDENTS[0].docSpc=docs.spc||"need";
+  D.get("students",[]).forEach(x=>{if(!STUDENTS.some(y=>y.name===x.name))STUDENTS.push(Object.assign({},x))});
+  const PG=D.get("prog",{});STUDENTS.forEach(x=>{if(PG[x.name])x.prog=PG[x.name];const m=D.get("med:"+x.name,null);if(m)x.med=m});
   const bal=D.get("alexBal",null);if(bal!=null)STUDENTS[0].bal=bal;
   STUDENTS.forEach(x=>{const b=D.get("bal:"+x.name,null);if(b!=null)x.bal=b});
   ALERTS=buildAlerts();
@@ -521,7 +527,10 @@ const STUDENTS=[
   {name:"Morgan Reyes",prog:"Commercial – Helicopter (later)",f:0,g:0,hrs:0,bal:0,instr:"—",med:"1st class · May 2027",status:"Enrolling",next:"—"}];
 
 // pay lines for the current period (from check-ins and logged ground lessons)
-const PERIOD={label:"Oct 27 – Nov 9",start:addDays(today,-7)};
+const fmtShort=d=>d.toLocaleDateString([],{month:"short",day:"numeric"});
+const PERIODS=[0,1,2].map(k=>{const st=addDays(today,-7-14*k),en=addDays(st,13);return {k,label:fmtShort(st)+" – "+fmtShort(en),start:st,d0:-7-14*k,d1:6-14*k}});
+let PERIOD=PERIODS[0];
+const inP=l=>l.d>=PERIOD.d0&&l.d<=PERIOD.d1;
 const PAY=[
   {d:-7,who:"J. Nichols",stu:"J. Snuffy",l:"F7",fl:1.4,gr:0.5,waived:false},
   {d:-6,who:"M. Houston",stu:"Sam Patel",l:"F3",fl:1.1,gr:0.3,waived:false},
@@ -561,7 +570,8 @@ const NAV=[["Operations",[["today","Today"],["schedule","Schedule"],["aircraft",
   ["Training & money",[["syllabus","Syllabus library"],["billing","Payments"],["safety","Safety"],["reports","Reports"],["admin","Business setup"]]]];
 const NAV_ROLE={
   instructor:null,
-  desk:[["Operations",[["today","Today"],["schedule","Schedule"],["tours","Tours"],["billing","Payments"],["sell","Sell items"],["hours","My hours"]]]]};
+  desk:[["Operations",[["today","Today"],["schedule","Schedule"],...(perms("desk").tour?[["tours","Tours"]]:[]),["billing","Payments"],["sell","Sell items"],["hours","My hours"]]]]};
+D.get("staffAdded",[]).forEach(addStaff);
 refreshRoles();
 if(ROLE==="instructor")NAV_ROLE.instructor=[["My day",[["today","Today"],["schedule","Schedule"],...(myRole("tour")?[["tours","Tours"]]:[]),["aircraft","Aircraft status"],["sell","Sell items"]]],["Me",[...(myRole("instructor")?[["students","My students"]]:[]),["pay","My hours & pay"]]]];
 const NAVX=NAV_ROLE[ROLE]||NAV;
@@ -571,7 +581,7 @@ let view="today", selStudent=null, selAc="N7187K", payWho="all";
 function renderNav(){
   $("side").innerHTML=`<div class="brand">AS<span>&amp;</span>S</div><div class="brand-sub">${ROLE==="owner"?"Owner console":ROLE==="instructor"?"Pilot":"Operations"} · Cullman base</div>
   <div class="rolebox"><span>Demo · viewing as</span>${D.select()}<button class="rb-reset" data-demo-reset>Reset demo</button></div>
-  <nav class="nav">${NAVX.map(([g,items])=>`<div class="grp">${g}</div>${items.map(([k,l])=>`<button data-nav="${k}" ${view===k?'aria-current="page"':""}><svg viewBox="0 0 24 24">${I[k]}</svg>${l}${k==="today"&&ALERTS.length?`<span class="badge">${ALERTS.length}</span>`:""}${k==="syllabus"?'<span class="later">Later</span>':""}</button>`).join("")}`).join("")}</nav>
+  <nav class="nav">${NAVX.map(([g,items])=>`<div class="grp">${g}</div>${items.map(([k,l])=>`<button data-nav="${k}" ${view===k?'aria-current="page"':""}><svg viewBox="0 0 24 24">${I[k]}</svg>${l}${k==="today"&&ALERTS.length?`<span class="badge">${ALERTS.length}</span>`:""}</button>`).join("")}`).join("")}</nav>
   <div class="side-foot"><b>${ME}</b>${ROLE_LBL} · <span class="sample" style="font-size:10px;padding:1px 6px">Sample data</span></div>`;
   D.wire($("side"));
 }
@@ -600,7 +610,7 @@ function vToday(){
   const hrsHead=[...Array(TLS)].map((_,i)=>{const h=TL0+i;return `<span style="left:${tlPct(h)}%">${h%12||12}${h<12?"a":"p"}</span>`}).join("");
   const nowL=tlPct(NOW);
   return `
-  <div class="page-h"><div><h1>Today</h1><p class="sub">${fmtDate(today)} · demo clock 10:40 AM</p></div></div>
+  <div class="page-h"><div><h1>Today</h1><p class="sub">${fmtDate(today)}</p></div></div>
   ${guideHtml()}
 
   ${wxHtml()}
@@ -610,9 +620,9 @@ function vToday(){
       <section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Timeline</h2>${canSchedule({type:"dual"})?'<span class="muted" style="font-size:12px">Click an empty spot to book</span>':""}
         <div class="legend"><span><i style="background:var(--dual)"></i>Dual</span><span><i style="background:var(--solo)"></i>Solo</span><span><i style="background:var(--tour)"></i>Tour block</span><span><i style="background:var(--ground)"></i>Ground</span><span><i style="background:var(--job)"></i>AS&amp;S</span><span><i style="background:var(--mx)"></i>Maintenance</span></div></div>
         <div class="panel-b tl-wrap"><div class="tl">
-          <div class="tl-head"><div></div><div class="hrs">${hrsHead}<span class="nowlbl" style="left:${nowL}%">10:40</span></div></div>
+          <div class="tl-head"><div></div><div class="hrs">${hrsHead}<span class="nowlbl" style="left:${nowL}%">${window.DEMO&&DEMO.nowLabel?DEMO.nowLabel().replace(/\s?[AP]M$/i,""):"10:40"}</span></div></div>
           <div class="tl-grp">Aircraft</div>
-          ${rows.filter(r=>r.k==="ac").map(r=>{const a=AIRCRAFT.find(x=>x.tail===r.id),n=nextInsp(a);return `<div class="tl-row"><div class="tl-label tl-ac" role="link" tabindex="0" data-acgo="${r.id}" title="${r.id} · ${esc(a.model)} · next inspection: ${n.full}. Open aircraft"><b>${r.label}</b><span class="tl-100row"><span class="tl-ik ${n.cls}">${n.short}</span><span class="tl-100 ${n.cls}"><i style="width:${n.pct}%"></i></span><span class="tl-100s ${n.cls}">${n.val}</span></span></div><div class="tl-lane" data-lane="ac" data-lid="${r.id}" title="Click an empty spot to book">${lane(r)}<div class="now" style="left:${nowL}%" data-t=""></div></div></div>`}).join("")}
+          ${rows.filter(r=>r.k==="ac").map(r=>{const a=AIRCRAFT.find(x=>x.tail===r.id),n=nextInsp(a);return `<div class="tl-row"><div class="tl-label tl-ac" role="link" tabindex="0" data-acgo="${r.id}" title="${r.id} · ${esc(a.model)} · ${grounded(r.id)?"GROUNDED · ":""}next inspection: ${n.full}. Open aircraft"><b>${r.label}${grounded(r.id)?' <span class="gnd">Grounded</span>':""}</b><span class="tl-100row"><span class="tl-ik ${n.cls}">${n.short}</span><span class="tl-100 ${n.cls}"><i style="width:${n.pct}%"></i></span><span class="tl-100s ${n.cls}">${n.val}</span></span></div><div class="tl-lane" data-lane="ac" data-lid="${r.id}" title="Click an empty spot to book">${lane(r)}<div class="now" style="left:${nowL}%" data-t=""></div></div></div>`}).join("")}
           <div class="tl-grp">Instructors &amp; pilots</div>
           ${rows.filter(r=>r.k==="p").map(r=>`<div class="tl-row"><div class="tl-label"><b>${r.label}</b><span>${esc(r.sub)}</span></div><div class="tl-lane" data-lane="p" data-lid="${r.id}" title="Click an empty spot to book">${lane(r)}<div class="now" style="left:${nowL}%" data-t=""></div></div></div>`).join("")}
         </div></div></section>
@@ -718,7 +728,7 @@ function rangeAt(poly,v,axis){const o=1-axis,h=[];for(let i=0;i<poly.length;i++)
 const inRange=(r,v)=>r&&v>=r[0]-1e-6&&v<=r[1]+1e-6;
 const latStr=v=>Math.abs(v)<0.005?"0.00":Math.abs(v).toFixed(2)+(v>0?" R":" L");
 
-const RATE_STU=65;
+let RATE_STU=65; /* updated from Business setup → Rates */
 function wbFor(tail,right,left,totalGal){
   const a=FLEET[tail],m=MODELS[a.model];
   let lo=0,hi=m.main.usable;for(let i=0;i<40;i++){const mid=(lo+hi)/2;(mid+auxFromMain(m,mid)<totalGal)?lo=mid:hi=mid}
@@ -734,10 +744,10 @@ function wbFor(tail,right,left,totalGal){
 }
 let BK=null; // open booking panel state
 /* dispatch and check-in: owner, the assigned instructor, or any instructor/pilot for a tour block */
-function canAct(b){if(ROLE==="desk")return b.type==="tour"&&(b.st==="overdue"||b.st==="live"); // Operations can close a tour block when the pilot can't
+function canAct(b){if(ROLE==="desk")return perms("desk").checkin&&b.type==="tour"&&(b.st==="overdue"||b.st==="live"); // Operations can close a tour block when the pilot can't
   return ROLE==="owner"||(ROLE==="instructor"&&(b.who===ME||(b.type==="tour"&&myRole("tour"))))}
 /* schedule changes (book, move, resize, cancel): owner, instructor/pilot and operations; maintenance blocks stay with the owner */
-function canSchedule(b){return ROLE==="owner"||((ROLE==="desk"||(ROLE==="instructor"&&myRole("sched")))&&b.type!=="mx")}
+function canSchedule(b){return ROLE==="owner"||(((ROLE==="desk"&&perms("desk").sched)||(ROLE==="instructor"&&myRole("sched")))&&b.type!=="mx")}
 function people(b){const [who,code]=b.t.split(" · ");return {stu:b.type==="job"||b.type==="mx"||b.type==="tour"?null:who,code:code||"",solo:b.type==="solo"}}
 function saveBk(b,patch){Object.assign(b,patch);const bs=D.get("bookState",{});bs[b.id]=Object.assign(bs[b.id]||{},patch);D.set("bookState",bs)}
 function openBk(id){const b=BOOK.find(x=>x.id===id);if(!b)return;const ac=b.ac&&AIRCRAFT.find(a=>a.tail===b.ac);
@@ -959,6 +969,7 @@ function bkDo(kind){
   const charge=(name,amt)=>{const x=STUDENTS.find(s=>s.name===name);if(x&&BK.pay==="balance"){x.bal=Math.round((x.bal-amt)*100)/100;D.set("bal:"+x.name,x.bal);if(x.name==="J. Snuffy")D.set("alexBal",x.bal)}};
   const method={balance:"Prepaid balance",tap:"Tap",cash:"Cash"}[BK.pay];
   if(kind==="dispatch"){
+    if(grounded(ac.tail))return bkErr(ac.tail+" is grounded: "+grounded(ac.tail).why+". Return it to service first.");
     if(!BK.mx)return bkErr("Review the aircraft's maintenance status first.");
     const w=wbFor(ac.tail,+BK.right||0,+BK.left||0,BK.fuel);if(!w.good)return bkErr("Weight and balance is out of limits. Adjust the load or fuel.");
     if(BK.frat==="High"&&!(ROLE==="owner"&&BK.fratOwner))return bkErr(ROLE==="owner"?"Approve the high-risk FRAT to dispatch.":"High-risk FRAT needs the owner's approval.");
@@ -976,7 +987,7 @@ function bkDo(kind){
     const IT=D.cartTotals(BK.items||{});
     if(b.type!=="job"){const instr=b.type==="dual"?(fl+gr)*rate:0;total=Math.round((fl*ac.rate+instr+IT.total)*100)/100;
       if(BK.pay==="balance"){const x=STUDENTS.find(s=>s.name===P.stu);if(x&&x.bal<total)return bkErr(`${P.stu}'s balance is ${money(x.bal)}, short of ${money(total)}. Take tap or cash, or add funds first.`)}
-      charge(P.stu,total);if(IT.lines.length)D.recordSale({buyer:P.stu,items:IT.lines,sub:IT.sub,tax:IT.tax,total:IT.total,method,by:ME,src:"Lesson check-in"})}
+      charge(P.stu,total);if(total-IT.total>0)recordPayment(P.stu,(P.code||b.type)+" · aircraft"+(b.type==="dual"?" + instruction":""),method,total-IT.total);if(IT.lines.length)D.recordSale({buyer:P.stu,items:IT.lines,sub:IT.sub,tax:IT.tax,total:IT.total,method,by:ME,src:"Lesson check-in"})}
     saveBk(b,{st:"done",hobbsIn:hi,flHrs:fl,grLogged:gr,amt:total,method:b.type==="job"?"":method});
     const waived=b.type==="dual"&&rate===0;
     if(b.id==="alexF14"){D.push("lessons",{code:"F14",fl,gr,rate,total,method,instr:b.who,at:new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}),hobbsIn:hi,tachIn:ti})}
@@ -984,7 +995,7 @@ function bkDo(kind){
     BK=null;render();renderBk();toast(b.type==="job"?`${b.ac} checked in. ${fl.toFixed(1)} hr added to maintenance and pilot pay.`:`Closed out · ${money(total)} ${method.toLowerCase()}${IT.lines.length?" incl. items":""} · receipt sent to ${P.stu}.`);return}
   if(kind==="logground"){
     const gr=parseFloat(($("bkGr")||{}).value);if(!(gr>0))return bkErr("Enter the ground hours.");
-    const IT=D.cartTotals(BK.items||{}),total=Math.round((gr*rate+IT.total)*100)/100;charge(P.stu,total);if(IT.lines.length)D.recordSale({buyer:P.stu,items:IT.lines,sub:IT.sub,tax:IT.tax,total:IT.total,method,by:ME,src:"Ground lesson"});
+    const IT=D.cartTotals(BK.items||{}),total=Math.round((gr*rate+IT.total)*100)/100;charge(P.stu,total);if(gr*rate>0)recordPayment(P.stu,P.code+" · ground instruction",method,gr*rate);if(IT.lines.length)D.recordSale({buyer:P.stu,items:IT.lines,sub:IT.sub,tax:IT.tax,total:IT.total,method,by:ME,src:"Ground lesson"});
     saveBk(b,{st:"done",grLogged:gr,amt:total,method});if(P.stu==="J. Snuffy")D.push("groundDone",P.code);D.push("checkins",{id:b.id,who:b.who,stu:P.stu,l:P.code,fl:0,gr,waived:rate===0});
     BK=null;render();renderBk();toast(`Ground lesson logged · ${money(total)} · ${P.stu}`);return}
   if(kind==="cancel"){const c=BK.cx||{};c.note=($("bkCxNote")||{}).value||"";if(!c.reason){const e=$("cxErr");e.textContent="Pick a reason.";e.hidden=false;return}
@@ -1022,14 +1033,14 @@ function vHours(){
 }
 /* ---------- PAY ---------- */
 function paySum(name){
-  const p=PEOPLE.find(x=>x.name===name), ls=PAY.filter(l=>l.who===name);
+  const p=PEOPLE.find(x=>x.name===name)||{flight:0,ground:0}, ls=PAY.filter(l=>l.who===name&&inP(l));
   let fl=0,gr=0,pay=0,wv=0;
   ls.forEach(l=>{if(l.waived){wv+=l.fl+l.gr;return}fl+=l.fl;gr+=l.gr;pay+=l.fl*p.flight+l.gr*p.ground});
   return {fl,gr,pay,wv,n:ls.length};
 }
 function vPay(){
   if(ROLE==="instructor")payWho=ME;
-  const lines=PAY.filter(l=>payWho==="all"||l.who===payWho).slice().sort((a,b)=>b.d-a.d);
+  const lines=PAY.filter(l=>(payWho==="all"||l.who===payWho)&&inP(l)).slice().sort((a,b)=>b.d-a.d);
   if(ROLE==="instructor"){const p=PEOPLE.find(x=>x.name===ME),sm=paySum(ME);return `
   <div class="page-h"><div><h1>My hours &amp; pay</h1><p class="sub">Pay period ${PERIOD.label} · from your check-ins and logged ground lessons</p></div></div>
   <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div class="kpi"><div class="k">Flight hours</div><div class="v">${sm.fl.toFixed(1)}</div><div class="d">at $${p.flight}/hr</div></div><div class="kpi"><div class="k">Ground hours</div><div class="v">${sm.gr.toFixed(1)}</div><div class="d">at $${p.ground}/hr</div></div><div class="kpi"><div class="k">Waived (unpaid)</div><div class="v">${sm.wv.toFixed(1)}</div><div class="d">hours</div></div><div class="kpi"><div class="k">Pay so far</div><div class="v">${money0(sm.pay)}</div><div class="d">Approved by the owner at period end</div></div></div>
@@ -1039,22 +1050,22 @@ function vPay(){
   </table><p class="muted" style="font-size:12px;margin:10px 0 0">Your pay rates are set by the owner.</p></div></section>`}
   /* everyone is a 1099 contractor: one table, one list of pay lines */
   const YTD={"J. Nichols":0,"M. Houston":6420,"R. Ellis":1890};
-  const H=allHours();
+  const H=allHours().filter(inP);
   const rows=[...PEOPLE.map((p,i)=>{const sm=paySum(p.name);return {name:p.name,role:p.role,kind:"fly",i,p,sm,pay:sm.pay,ytd:YTD[p.name]||0}}),
     ...STAFF.map((p,i)=>{const hrs=H.filter(h=>h.who===p.name).reduce((t,h)=>t+hrsOf(h),0);return {name:p.name,role:p.role,kind:"hrs",i,p,hrs,pay:hrs*p.rate,ytd:p.ytd}})];
   const tot=rows.reduce((t,r)=>t+r.pay,0);
   const rIn=(id,attr,v,lbl)=>`<span class="rate-l">${lbl}</span> $<input class="rate-in" id="${id}" ${attr} inputmode="decimal" value="${v}" aria-label="${lbl} rate">`;
-  const flyLines=PAY.map(l=>{const p=PEOPLE.find(x=>x.name===l.who);return {d:l.d,who:l.who,what:`${esc(l.stu)} <span class="mono muted">${esc(l.l)}</span>`,
+  const flyLines=PAY.filter(inP).map(l=>{const p=PEOPLE.find(x=>x.name===l.who)||{flight:0,ground:0};return {d:l.d,who:l.who,what:`${esc(l.stu)} <span class="mono muted">${esc(l.l)}</span>`,
       hrs:l.waived?`<span class="strike">${[l.fl?l.fl.toFixed(1)+" flight":"",l.gr?l.gr.toFixed(1)+" ground":""].filter(Boolean).join(" · ")}</span>`:[l.fl?l.fl.toFixed(1)+" flight":"",l.gr?l.gr.toFixed(1)+" ground":""].filter(Boolean).join(" · "),
       pay:l.waived?'<span class="pill warn plain">Waived · $0</span>':money(l.fl*p.flight+l.gr*p.ground),
       src:l.l==="Tour"?"Tour block check-in":l.l==="AS&S"?"AS&amp;S job check-in":l.l[0]==="G"?"Ground lesson log":"Aircraft check-in",del:""}});
-  const hrLines=H.map(h=>{const p=STAFF.find(x=>x.name===h.who);return {d:h.d,who:h.who,what:esc(h.note||p.role),
+  const hrLines=H.map(h=>{const p=STAFF.find(x=>x.name===h.who)||{rate:0,role:""};return {d:h.d,who:h.who,what:esc(h.note||p.role),
       hrs:`${hrsOf(h).toFixed(2)} hr <span class="muted" style="font-size:12px">${fmtH(h.start)}–${fmtH(h.end)}${h.brk?" · "+h.brk+"m break":""}</span>`,
       pay:money(hrsOf(h)*p.rate),src:"Hours log",del:`<button class="btn small" data-hdel="${h.id}">Remove</button>`}});
   const all=[...flyLines,...hrLines].filter(l=>payWho==="all"||l.who===payWho).sort((x,y)=>y.d-x.d||x.who.localeCompare(y.who));
   return `
   <div class="page-h"><div><h1>Pay &amp; hours</h1><p class="sub">Pay period ${PERIOD.label} · biweekly · all 1099 contractors · from check-ins, ground lessons and hours logs</p></div>
-    <div class="actions"><select class="search" style="width:auto" aria-label="Pay period" id="periodSel"><option>Oct 27 – Nov 9 (current)</option><option>Oct 13 – Oct 26</option><option>Sep 29 – Oct 12</option></select><button class="btn" data-toast="Exported contractor pay lines to CSV">Export</button><button class="btn primary" data-toast="Period approved. Contractors can see their final totals.">Approve period</button></div></div>
+    <div class="actions"><select class="search" style="width:auto" aria-label="Pay period" id="periodSel">${PERIODS.map(q=>`<option value="${q.k}" ${q===PERIOD?"selected":""}>${q.label}${q.k===0?" (current)":""}</option>`).join("")}</select><button class="btn" data-op="exportPay">Export CSV</button>${(()=>{const ok=D.get("periodOk:"+PERIOD.label,null);return ok?`<span class="pill ok">Approved ${ok.at}</span><button class="btn small" data-op="reopenPeriod">Reopen</button>`:`<button class="btn primary" data-op="approvePeriod">Approve period</button>`})()}</div></div>
 
   <section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Contractors</h2><span class="muted" style="font-size:12px">Rates are what you pay, separate from what customers are charged</span></div>
     <div class="panel-b tbl-wrap"><table>
@@ -1084,7 +1095,7 @@ function vStudents(){
   const vis=STUDENTS.map((x,i)=>[x,i]).filter(([x])=>ROLE!=="instructor"||x.instr===ME);
   return `
   <div class="page-h"><div><h1>${ROLE==="instructor"?"My students":"Students"}</h1><p class="sub">${ROLE==="instructor"?vis.length+" students assigned to "+ME:STUDENTS.length+" students · 5 in Private Pilot training"}</p></div>
-    <div class="actions"><input class="search" id="stuSearch" placeholder="Search students" aria-label="Search students"><button class="btn primary" data-toast="Add student: contact, documents, then enroll in a syllabus">Add student</button></div></div>
+    <div class="actions"><input class="search" id="stuSearch" placeholder="Search students" aria-label="Search students"><button class="btn primary" data-op="addStudent">Add student</button></div></div>
   <div class="grid ${s?"cols-main":""}">
     <section class="panel"><div class="panel-b tbl-wrap" style="padding-top:8px"><table>
       <tr><th>Student</th><th>Program</th><th>Status</th><th>Progress</th><th class="num">Hours</th><th class="num">Balance</th><th>Next</th></tr>
@@ -1094,33 +1105,29 @@ function vStudents(){
         <td class="num" style="${x.bal<150?"color:var(--bad)":""}">${money(x.bal)}</td><td style="white-space:nowrap">${x.next}</td></tr>`).join("")}
     </table></div></section>
     ${s?`<section class="panel"><div class="panel-h"><h2>${s.name}</h2><button class="btn small" data-stu="-1">Close</button></div><div class="panel-b grid" style="gap:14px">
-      <div class="kv"><span>Program</span><span>${s.prog}</span><span>Instructor</span><span>${s.instr}</span><span>Phone</span><span>(256) 555-0142 <span class="sample">sample</span></span><span>Emergency</span><span>K. Snuffy · (256) 555-0199</span><span>Balance</span><span class="mono">${money(s.bal)}</span></div>
+      <div class="kv"><span>Program</span><span>${s.prog}</span><span>Instructor</span><span>${s.instr}</span><span>Phone</span><span>${s.phone?`<a href="tel:${s.phone.replace(/[^\d+]/g,"")}">${esc(s.phone)}</a>`:'(256) 555-0142 <span class="sample">sample</span>'}</span>${s.email?`<span>Email</span><span>${esc(s.email)}</span>`:""}<span>Emergency</span><span>${s.added?esc(s.emer||"—"):"K. Snuffy · (256) 555-0199"}</span><span>Balance</span><span class="mono">${money(s.bal)}</span></div>
       <div><div class="muted" style="font-size:12px;margin-bottom:4px">Certificates and documents</div>
         <div class="doc"><span>Student pilot certificate</span>${s.docSpc==="review"?'<span style="display:flex;gap:6px;align-items:center"><span class="pill warn">In review</span><button class="btn small primary" data-docok="spc">Approve</button></span>':s.docSpc==="need"?'<span class="pill warn">Needed before first solo</span>':'<span class="pill ok">On file</span>'}</div>
-        <div class="doc"><span>Medical · ${s.med}</span>${s.med.startsWith("Pending")?'<button class="btn small" data-toast="Upload: photo or PDF of the medical">Upload</button>':'<span class="pill ok">On file</span>'}</div>
+        <div class="doc"><span>Medical · ${s.med}</span>${s.med.startsWith("Pending")?`<button class="btn small" data-op="medical" data-arg="${selStudent}">Upload</button>`:'<span class="pill ok">On file</span>'}</div>
         <div class="doc"><span>SFAR 73 awareness training</span><span class="pill ok">Signed</span></div>
         <div class="doc"><span>Solo endorsement (61.87)</span>${s.status==="Solo"?'<span class="pill ok">Current · 90 days</span>':'<span class="pill plain" style="background:var(--sunk)">Not yet</span>'}</div>
         <div class="doc"><span>TSA citizenship verification</span><span class="pill ok">On file</span></div></div>
       <div><div class="muted" style="font-size:12px;margin-bottom:4px">Syllabus</div>
         <div class="lim"><span>Flight lessons</span><span class="mono">${s.f}/39</span><div class="meter"><i style="width:${s.f/39*100}%;background:var(--accent)"></i></div><span>Ground lessons</span><span class="mono">${s.g}/19</span><div class="meter"><i style="width:${s.g/19*100}%;background:var(--accent)"></i></div></div></div>
-      <div class="actions"><button class="btn" data-toast="Training record opens here: every lesson with instructor notes and grades">Training record</button><button class="btn" data-toast="Add funds to prepaid balance">Add funds</button><button class="btn" data-nav="syllabus">Change syllabus</button></div>
+      <div class="actions"><button class="btn" data-op="record" data-arg="${selStudent}">Training record</button><button class="btn" data-op="funds" data-arg="${selStudent}">Add funds</button><button class="btn" data-nav="syllabus">Change syllabus</button></div>
     </div></section>`:""}
   </div>`;
 }
 
 /* ---------- SYLLABUS LIBRARY ---------- */
 function vSyllabus(){
+  const L=sylList(),pill=st=>/Active/.test(st)?"ok":st==="Draft"?"warn":"info";
   return `
-  <div class="later-banner"><b>Later.</b> The first version has one syllabus built in: Private Pilot – Helicopter, Part 61, from the Robinson R22/R44 Flight Training Guide. Uploading, building and applying other syllabi comes later.</div>
   <div class="page-h"><div><h1>Syllabus library</h1><p class="sub">Saved syllabi you can apply to a student at enrollment</p></div>
-    <div class="actions"><button class="btn" data-toast="Build a syllabus lesson by lesson">Build syllabus</button><button class="btn primary" data-toast="Upload a syllabus (PDF, Word or CSV); lessons are read into a draft for review">Upload syllabus</button></div></div>
-  <div class="cards">
-    <div class="card"><span class="pill ok plain" style="align-self:flex-start">Active · v1</span><b>Private Pilot – Helicopter (Part 61)</b><span class="muted">Robinson Flight Training Guide (R22/R44) · 3 stages · 39 flight · 19 ground lessons · avg 40 dual / 10 solo / 35 ground hr</span><span class="muted">5 students enrolled</span><div class="actions"><button class="btn small primary" data-toast="Pick a student to enroll">Apply to student</button><button class="btn small" data-toast="Opens the lesson list for editing">Edit</button></div></div>
-    <div class="card"><span class="pill warn plain" style="align-self:flex-start">Draft</span><b>Commercial – Helicopter (Part 61)</b><span class="muted">Later · not built yet</span><div class="actions"><button class="btn small" data-toast="Continue building">Continue</button></div></div>
-    <div class="card"><span class="pill info plain" style="align-self:flex-start">Later</span><b>Private Pilot – Helicopter (Part 141)</b><span class="muted">Course framework drafted</span><div class="actions"><button class="btn small" data-toast="Opens the Part 141 framework">Open</button></div></div>
-    <div class="card"><span class="pill info plain" style="align-self:flex-start">Template</span><b>Discovery flight</b><span class="muted">1 flight lesson · 0.5 hr dual · intro briefing</span><div class="actions"><button class="btn small" data-toast="Opens the template">Open</button></div></div>
-  </div>
-  <section class="panel" style="margin-top:16px"><div class="panel-h"><h2>Upload</h2></div><div class="panel-b"><div class="drop">Drop a syllabus file here, or <button class="btn small" data-toast="Choose a file">choose a file</button><br><span style="font-size:12px">Lessons, hours and completion standards are pulled into a draft you review before saving.</span></div></div></section>`;
+    <div class="actions"><button class="btn" data-op="build">Build syllabus</button><button class="btn primary" data-op="upload">Upload syllabus</button></div></div>
+  <div class="cards">${L.map(x=>`<div class="card"><span class="pill ${pill(x.st)} plain" style="align-self:flex-start">${esc(x.st)}</span><b>${esc(x.n)}</b><span class="muted">${esc(x.d)}</span>${/Active/.test(x.st)?`<span class="muted">${enrolled(x.n)} student${enrolled(x.n)===1?"":"s"} enrolled</span>`:""}
+    <div class="actions">${/Active/.test(x.st)?`<button class="btn small primary" data-op="apply" data-arg="${x.id}">Apply to student</button>`:""}${x.base?'<button class="btn small" data-op="sylEdit">Edit</button>':x.st==="Draft"?`<button class="btn small" data-op="build" data-arg="${x.id}">Continue</button>`:`<button class="btn small" data-op="sylView" data-arg="${x.id}">Open</button>`}</div></div>`).join("")}</div>
+  <section class="panel" style="margin-top:16px"><div class="panel-h"><h2>Upload</h2></div><div class="panel-b"><div class="drop">Upload a syllabus file, or <button class="btn small" data-op="upload">choose a file</button><br><span style="font-size:12px">A CSV (code, title, type, hours) is read into lessons. A PDF or Word file is attached to a draft you fill in.</span></div></div></section>`;
 }
 
 /* ---------- AIRCRAFT ---------- */
@@ -1131,7 +1138,7 @@ function vAircraft(){
     <div class="actions">${AIRCRAFT.map(x=>`<button class="btn ${x.tail===selAc?"primary":""}" data-ac="${x.tail}">${x.tail}</button>`).join("")}${ROLE==="owner"?'<button class="btn" data-acadd>Add aircraft</button>':""}</div></div>
   <div class="grid cols-main">
     <div class="grid" style="align-content:start">
-      <section class="panel"><div class="panel-h"><h2>${a.tail} · ${a.model}</h2><div class="actions"><button class="btn small danger" data-toast="${a.tail} grounded. Bookings are flagged and dispatch is blocked.">Ground aircraft</button>${ROLE==="owner"?`<button class="btn small" data-acedit="${a.tail}">Edit</button>`:""}${ROLE==="owner"?`<button class="btn small" data-aclog="${a.tail}">Log maintenance</button>`:""}</div></div>
+      <section class="panel"><div class="panel-h"><h2>${a.tail} · ${a.model}</h2><div class="actions">${ROLE==="desk"?"":grounded(a.tail)?`<button class="btn small primary" data-op="rts" data-arg="${a.tail}">Return to service</button>`:`<button class="btn small danger" data-op="ground" data-arg="${a.tail}">Ground aircraft</button>`}${ROLE==="owner"?`<button class="btn small" data-acedit="${a.tail}">Edit</button>`:""}${ROLE==="owner"?`<button class="btn small" data-aclog="${a.tail}">Log maintenance</button>`:""}</div></div>
         <div class="panel-b tbl-wrap"><table>
           <tr><th>Limit</th><th>Due</th><th class="num">Remaining</th><th>Status</th></tr>
           <tr><td>100-hour inspection</td><td class="mono">Tach ${a.next100.toFixed(1)}</td><td class="num">${(a.next100-a.tach).toFixed(1)} hr</td><td>${a.next100-a.tach<10?'<span class="pill warn">Due soon</span>':'<span class="pill ok">Good</span>'}</td></tr>
@@ -1140,8 +1147,8 @@ function vAircraft(){
           <tr><td>Oil change (50 hr)</td><td class="mono">Tach ${a.oilDue.toFixed(1)}</td><td class="num">${(a.oilDue-a.tach).toFixed(1)} hr</td><td><span class="pill ok">Good</span></td></tr>
           ${(AC_MX[a.tail]||{insp:[]}).insp.map(([n,iso])=>{const dd=daysTo(iso);return `<tr><td>${n}</td><td>${fmtD(iso)}</td><td class="num">${leftDays(dd)}</td><td>${dd<15?'<span class="pill bad">Due</span>':dd<=60?'<span class="pill warn">Due soon</span>':'<span class="pill ok">Good</span>'}</td></tr>`}).join("")}
         </table></div></section>
-      <section class="panel"><div class="panel-h"><h2>Squawks</h2><button class="btn small" data-toast="Add a squawk: what you found, photo, and whether it grounds the aircraft">Add squawk</button></div><div class="panel-b alerts">
-        ${a.tail==="N7187K"?`<div class="al warn"><span class="bar"></span><div><b>Left door seal worn</b><p>Reported by J. Snuffy at check-in · deferred, not an airworthiness item</p><div class="row"><button class="btn small" data-toast="Squawk cleared">Clear</button><button class="btn small" data-toast="Aircraft grounded for this squawk">Make grounding</button></div></div></div>`:`<div class="empty-note">No open squawks.</div>`}
+      <section class="panel"><div class="panel-h"><h2>Squawks</h2><button class="btn small" data-op="addSquawk" data-arg="${a.tail}">Add squawk</button></div><div class="panel-b alerts">${grounded(a.tail)?`<div class="al bad"><span class="bar"></span><div><b>Grounded</b><p>${esc(grounded(a.tail).why)}${grounded(a.tail).by?" · "+esc(grounded(a.tail).by):""}${grounded(a.tail).at?" · "+grounded(a.tail).at:""}</p></div></div>`:""}
+        ${sqHtml(a)}
       </div></section>
     </div>
     <div class="grid" style="align-content:start">
@@ -1368,17 +1375,15 @@ function itemsEditor(){
   </div></section>`;
 }
 function vBilling(){
-  return `<div class="page-h"><div><h1>Payments</h1><p class="sub">Student balances, payments and item sales · tap/swipe/insert and cash · no cards stored</p></div>${ROLE==="owner"?'<div class="actions"><button class="btn" data-toast="Exported payments to CSV for the accountant">Export CSV</button><button class="btn primary" data-toast="Rates and policies editor">Rates &amp; policies</button></div>':""}</div>
-  ${ROLE==="owner"?`  <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div class="kpi"><div class="k">Today</div><div class="v">$915</div><div class="d">Lessons, tour block, ground</div></div><div class="kpi"><div class="k">This month</div><div class="v">$14,920</div><div class="d">Nov 1–3</div></div><div class="kpi"><div class="k">Prepaid balances</div><div class="v">$5,295</div><div class="d">Held for students</div></div><div class="kpi attn"><div class="k">Low balances</div><div class="v">1</div><div class="d">Under next lesson</div></div></div>`:""}
+  return `<div class="page-h"><div><h1>Payments</h1><p class="sub">Student balances, payments and item sales · tap/swipe/insert and cash · no cards stored</p></div>${ROLE==="owner"?'<div class="actions"><button class="btn" data-op="exportPayments">Export CSV</button><button class="btn primary" data-op="biz" data-arg="rates">Rates</button><button class="btn" data-op="biz" data-arg="policies">Policies</button></div>':""}</div>
+  ${ROLE==="owner"?`  <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">${(()=>{const P=allPayments(),tr=(D.get("tour",null)||{}).rev||0,td=P.reduce((t,p)=>t+p.amt,0)+allSales().reduce((t,x)=>t+x.total,0)+tr,held=STUDENTS.reduce((t,x)=>t+x.bal,0),mb=+biz().minBal||150,low=STUDENTS.filter(x=>x.status!=="Enrolling"&&x.bal<mb).length;
+    return `<div class="kpi"><div class="k">Today</div><div class="v">${money(td)}</div><div class="d">${P.length} payments · ${allSales().length} item sales</div></div><div class="kpi"><div class="k">This month</div><div class="v">${money(13985+td)}</div><div class="d">Since ${fmtShort(new Date(today.getFullYear(),today.getMonth(),1))}</div></div><div class="kpi"><div class="k">Prepaid balances</div><div class="v">${money(held)}</div><div class="d">Held for students</div></div><div class="kpi ${low?"attn":""}"><div class="k">Low balances</div><div class="v">${low}</div><div class="d">Under ${money(mb)}</div>`})()}</div></div></div>`:""}
   <section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Student balances</h2><input class="search" id="stuSearch" placeholder="Search students" aria-label="Search students" style="max-width:220px"></div><div class="panel-b tbl-wrap"><table><tr><th>Student</th><th>Phone</th><th>Next</th><th class="num">Balance</th><th>Add funds</th></tr>
   ${STUDENTS.map((x,i)=>`<tr data-stu-row="${i}"><td><b>${x.name}</b></td><td class="mono">(256) 555-01${(42+i*7)%100}</td><td>${x.next}</td><td class="num" style="${x.bal<150?"color:var(--bad)":""}">${money(x.bal)}</td>
-    <td><div class="actions">${[250,500,1000].map(v=>`<button class="btn small" data-fund="${i}" data-amt="${v}">+$${v}</button>`).join("")}</div></td></tr>`).join("")}</table>
+    <td>${ROLE==="desk"&&!perms("desk").pay?'<span class="muted" style="font-size:12px">Owner only</span>':`<div class="actions">${[250,500,1000].map(v=>`<button class="btn small" data-fund="${i}" data-amt="${v}">+$${v}</button>`).join("")}<button class="btn small" data-op="funds" data-arg="${i}">Other</button></div>`}</td></tr>`).join("")}</table>
   <p class="muted" style="font-size:12px;margin:10px 0 0">Adding funds takes payment by tap or cash at the reader, and a receipt goes to the student.</p></div></section>
   <section class="panel"><div class="panel-h"><h2>Recent payments</h2></div><div class="panel-b tbl-wrap"><table><tr><th>Time</th><th>From</th><th>For</th><th>Method</th><th class="num">Amount</th></tr>
-    <tr><td class="mono">10:28 AM</td><td>Walk-up group (2)</td><td>Tour block · Up n' Down</td><td>Cash</td><td class="num">$20.00</td></tr>
-    <tr><td class="mono">9:58 AM</td><td>J. Snuffy</td><td>F14 · aircraft + instruction</td><td>Prepaid balance</td><td class="num">$500.50</td></tr>
-    <tr><td class="mono">9:50 AM</td><td>Walk-up group (3)</td><td>Tour block · Run to Cullman</td><td>Tap · Apple Pay</td><td class="num">$180.00</td></tr>
-    <tr><td class="mono">8:20 AM</td><td>Walk-up group (3)</td><td>Tour block · Around the Pattern + photos</td><td>Tap · card</td><td class="num">$105.00</td></tr></table>
+    ${allPayments().slice().reverse().map(p=>`<tr><td class="mono">${p.at}</td><td>${esc(p.from)}</td><td>${esc(p.for)}</td><td>${esc(p.method)}</td><td class="num">${money(p.amt)}</td></tr>`).join("")}</table>
     <p class="muted" style="font-size:12px;margin:10px 0 0">Item sales are listed separately below. Later: QuickBooks sync, AS&amp;S job invoices, payout reconciliation.</p></div></section>
   ${(()=>{const A=allSales(),sub=A.reduce((t,x)=>t+x.sub,0),tax=A.reduce((t,x)=>t+x.tax,0);return `<section class="panel" style="margin-top:16px"><div class="panel-h"><h2>Item sales</h2><span class="muted" style="font-size:12px">${money(sub)} in items · ${money(tax)} sales tax collected today</span></div><div class="panel-b tbl-wrap"><table>
     <tr><th>Time</th><th>Buyer</th><th>Items</th><th>Where</th><th>Sold by</th><th>Method</th><th class="num">Tax</th><th class="num">Total</th></tr>
@@ -1386,34 +1391,279 @@ function vBilling(){
   </table><p class="muted" style="font-size:12px;margin:10px 0 0">Sales tax is tracked separately so it can be filed. Item sales don't count toward contractor pay.</p></div></section>`})()}`;
 }
 function vSafety(){
-  return `<div class="page-h"><div><h1>Safety</h1><p class="sub">Reports and FRAT approvals. Everything is sent to the AS&amp;S SMS, where hazards and actions are managed.</p></div><div class="actions"><button class="btn primary" data-toast="Opens the AS&S SMS">Open AS&amp;S SMS</button></div></div>
+  return `<div class="page-h"><div><h1>Safety</h1><p class="sub">Reports and FRAT approvals. Everything is sent to the AS&amp;S SMS, where hazards and actions are managed.</p></div><div class="actions"><button class="btn primary" data-op="report">File a report</button>${biz().smsUrl?`<a class="btn" href="${esc(biz().smsUrl)}" target="_blank" rel="noopener">Open AS&amp;S SMS</a>`:""}</div></div>
   <div class="grid cols-2">
     <section class="panel"><div class="panel-h"><h2>Recent reports</h2></div><div class="panel-b tbl-wrap"><table><tr><th>Date</th><th>Type</th><th>Summary</th><th>Status</th></tr>
-      <tr><td>${fmtDate(addDays(today,-2))}</td><td>Hazard</td><td>FOD near fuel pit after mowing</td><td><span class="pill ok">Sent to AS&amp;S SMS</span></td></tr>
-      <tr><td>${fmtDate(addDays(today,-9))}</td><td>Near miss</td><td>Fixed-wing traffic on helicopter pattern</td><td><span class="pill ok">Sent to AS&amp;S SMS</span></td></tr></table></div></section>
-    <section class="panel"><div class="panel-h"><h2>High-risk FRATs awaiting approval</h2></div><div class="panel-b"><div class="al warn"><span class="bar"></span><div><b>2:00 PM tour block · N931QA</b><p>Score 16 · gusts 22 kt forecast · back-to-back loads</p><div class="row"><button class="btn small primary" data-alert="a2" data-alact="Approve">Approve</button></div></div></div></div></section>
+      ${D.get("safety",[]).slice().reverse().map(r=>`<tr><td>${fmtD(r.at)}</td><td>${esc(r.type)}${r.ac&&r.ac!=="None"?" · "+r.ac:""}</td><td>${esc(r.t)}<div class="muted" style="font-size:12px">${esc(r.by)}</div></td><td><span class="pill ok">${r.st}</span></td></tr>`).join("")}${SR0.map(r=>`<tr><td>${fmtDate(addDays(today,r.d))}</td><td>${r.type}</td><td>${r.t}</td><td><span class="pill ok">Sent to AS&amp;S SMS</span></td></tr>`).join("")}</table></div></section>
+    <section class="panel"><div class="panel-h"><h2>High-risk FRATs awaiting approval</h2></div><div class="panel-b">${D.get("fratOk",false)?'<div class="empty-note">None waiting. The 1:00 PM tour block FRAT was approved.</div>':`<div class="al warn"><span class="bar"></span><div><b>2:00 PM tour block · N931QA</b><p>Score 16 · gusts 22 kt forecast · back-to-back loads</p><div class="row"><button class="btn small primary" data-alert="a2" data-alact="Approve">Approve</button><button class="btn small" data-op="frat">Review</button></div></div></div>`}</div></section>
   </div>
   <div class="later-banner" style="margin-top:16px"><b>Later.</b> Bringing the full SMS (hazard register, risk matrix, assurance, bulletins) into the scheduler.</div>`;
 }
 function vStaff(){
-  return `<div class="page-h"><div><h1>Staff &amp; permissions</h1><p class="sub">Account types, roles and what each person can see. Pilot roles: Instructor teaches lessons, Tour flies and dispatches tour blocks, AS&amp;S jobs flies AS&amp;S work, Schedule changes books, moves and cancels.</p></div><div class="actions"><button class="btn primary" data-toast="Invite staff by email">Invite staff</button></div></div>
+  const R=D.pilotRoles(),dk=perms("desk"),mc=perms("mech"),tg=a=>a.map(x=>`<span class="tag">${x}</span>`).join(" ");
+  return `<div class="page-h"><div><h1>Staff &amp; permissions</h1><p class="sub">Account types, roles and what each person can see. Pilot roles: Instructor teaches lessons, Tour flies and dispatches tour blocks, AS&amp;S jobs flies AS&amp;S work, Schedule changes books, moves and cancels.</p></div><div class="actions"><button class="btn primary" data-op="invite">Invite staff</button></div></div>
   <section class="panel"><div class="panel-b tbl-wrap" style="padding-top:8px"><table><tr><th>Name</th><th>Account type</th><th>Roles and approvals</th><th>Medical</th><th>Drug testing</th><th></th></tr>
-    ${(()=>{const R=D.pilotRoles(),info={"J. Nichols":["Owner · Pilot",'<span class="tag">Safety manager</span> <span class="tag">R22</span> <span class="tag">R44</span>',"2nd class"],"M. Houston":["Pilot",'<span class="tag">R22</span> <span class="tag">R44</span>','<span class="pill warn">Expires Nov 24</span>'],"R. Ellis":["Pilot",'<span class="tag">R44</span>',"2nd class"]};
-      return PEOPLE.map(p=>{const [acct,tags,med]=info[p.name];return `<tr><td><b>${p.name}</b></td><td>${acct}</td><td><div class="rolesw">${D.PILOT_ROLES.map(([k,l])=>`<label class="rsw ${R[p.name]&&R[p.name][k]?"on":""}"><input type="checkbox" data-prole="${p.name}" data-rk="${k}" ${R[p.name]&&R[p.name][k]?"checked":""}> ${l}</label>`).join("")}</div><div style="margin-top:6px">${tags}</div></td><td>${med}</td><td><span class="pill ok">Enrolled</span></td><td><button class="btn small" data-toast="Edit details">Edit</button></td></tr>`}).join("")})()}
-    <tr><td><b>Operations</b></td><td>Operations</td><td><span class="tag">Tour desk</span> <span class="tag">Schedule changes</span> <span class="tag">Check-in</span> <span class="tag">Take payments</span></td><td>—</td><td>—</td><td><button class="btn small" data-toast="Edit permissions">Edit</button></td></tr>
-    <tr><td><b>A&amp;P mechanic</b></td><td>Mechanic</td><td><span class="tag">Return to service</span></td><td>—</td><td>—</td><td><button class="btn small" data-toast="Edit permissions">Edit</button></td></tr></table></div></section>`;
+    ${PEOPLE.map(p=>{const i=staffInfo(p.name);return `<tr><td><b>${p.name}</b>${i.phone||i.email?`<div class="muted" style="font-size:12px">${esc([i.phone,i.email].filter(Boolean).join(" · "))}</div>`:""}</td><td>${esc(i.acct)}</td><td><div class="rolesw">${D.PILOT_ROLES.map(([k,l])=>`<label class="rsw ${R[p.name]&&R[p.name][k]?"on":""}"><input type="checkbox" data-prole="${p.name}" data-rk="${k}" ${R[p.name]&&R[p.name][k]?"checked":""}> ${l}</label>`).join("")}</div><div style="margin-top:6px">${tg([i.safety&&"Safety manager",i.r22&&"R22",i.r44&&"R44"].filter(Boolean))}</div></td><td>${medTxt(i)}</td><td><span class="pill ok">Enrolled</span></td><td><button class="btn small" data-op="editStaff" data-arg="${p.name}">Edit</button></td></tr>`}).join("")}
+    ${STAFF.map(p=>{const i=staffInfo(p.name);return `<tr><td><b>${p.name}</b>${i.phone||i.email?`<div class="muted" style="font-size:12px">${esc([i.phone,i.email].filter(Boolean).join(" · "))}</div>`:""}</td><td>${esc(p.role)}</td><td>${p.role==="Operations"?tg([dk.tour&&"Tour desk",dk.sched&&"Schedule changes",dk.checkin&&"Close tour blocks",dk.pay&&"Take payments"].filter(Boolean))||'<span class="muted">No permissions</span>':tg(["Hours log"])}</td><td>—</td><td>—</td><td><div class="actions">${p.role==="Operations"?'<button class="btn small" data-op="perms" data-arg="desk">Permissions</button>':""}<button class="btn small" data-op="editStaff" data-arg="${p.name}">Edit</button></div></td></tr>`}).join("")}
+    <tr><td><b>A&amp;P mechanic</b></td><td>Mechanic</td><td>${tg([mc.rts&&"Return to service",mc.squawk&&"Clear squawks"].filter(Boolean))||'<span class="muted">No permissions</span>'}</td><td>—</td><td>—</td><td><button class="btn small" data-op="perms" data-arg="mech">Permissions</button></td></tr></table></div></section>`;
 }
 function vReports(){
-  const now=[["Monthly operations wrap-up","Hours by aircraft and type, revenue, students, safety"],["Instructor hours","Flight and ground by instructor and pay period"]];
-  const later=["Revenue by product","Aircraft utilization","Student progress","Tour performance"];
-  return `<div class="page-h"><div><h1>Reports</h1><p class="sub">Every report draws from the same check-in data</p></div></div><div class="cards">${now.map(([t,d])=>`<div class="card"><b>${t}</b><span class="muted">${d}</span><div class="actions"><button class="btn small" data-toast="${t} opens here">Open</button><button class="btn small" data-toast="Exported">Export</button></div></div>`).join("")}</div>
-  <div class="later-banner" style="margin-top:16px"><b>Later:</b> ${later.join(" · ")}</div>`;
+  const now=[["ops","Operations wrap-up","Hours by aircraft and type, payments, students, safety"],["hours","Contractor hours","Flight, ground and logged hours by person for the pay period"]];
+  return `<div class="page-h"><div><h1>Reports</h1><p class="sub">Every report draws from the same check-in data</p></div></div><div class="cards">${now.map(([k,t,d])=>`<div class="card"><b>${t}</b><span class="muted">${d}</span><div class="actions"><button class="btn small primary" data-op="reportView" data-arg="${k}">Open</button></div></div>`).join("")}
+  <div class="card"><b>Payments and sales</b><span class="muted">Every payment and item sale, for the accountant</span><div class="actions"><button class="btn small" data-op="exportPayments">Download CSV</button></div></div>
+  <div class="card"><b>Contractor pay</b><span class="muted">Pay lines for the period, for 1099s</span><div class="actions"><button class="btn small" data-op="exportPay">Download CSV</button></div></div></div>`;
 }
 function vAdmin(){
   return `<div class="page-h"><div><h1>Business setup</h1><p class="sub">Company details, base, rates, policies and integrations</p></div></div>
   ${itemsEditor()}
-  <div class="cards">${[["Company","Aeronautical Solutions & Strategies LLC · Cullman base"],["Rates","Aircraft rates by flight type, instruction rates charged to students"],["Policies","Cancellation, weather, deposits, minimum balances"],["Certificates","91.147 LOA, drug and alcohol testing program, insurance"],["Notifications","Text and email templates, dispatch email"],["Integrations","Card reader and tap-to-pay, calendars, AS&S SMS"]].map(([t,d])=>`<div class="card"><b>${t}</b><span class="muted">${d}</span><button class="btn small" style="align-self:flex-start" data-toast="${t} settings open here">Open</button></div>`).join("")}</div>`;
+  ${(()=>{const b=biz();return `<div class="cards">${[["company","Company",esc(b.company)+" · "+esc(b.base)],["rates","Rates",`R22 $${b.r22}/hr · R44 $${b.r44}/hr · instruction $${b.instr}/hr`],["policies","Policies",`Free cancellation ${b.cxHrs} hr ahead · late fee $${b.cxFee} · low balance under $${b.minBal}`],["certs","Certificates",b.loa?"LOA "+esc(b.loa)+(b.loaExp?" · expires "+fmtD(b.loaExp):""):"91.147 LOA, drug and alcohol testing, insurance"],["notify","Notifications",`${["nConfirm","nRemind","nDispatch","nReceipt","nLowBal"].filter(k=>b[k]).length} of 5 on · ${D.get("outbox",[]).length} sent`],["integrations","Integrations","Card reader: "+esc(b.reader)]].map(([k,t,d])=>`<div class="card"><b>${t}</b><span class="muted">${d}</span><button class="btn small" style="align-self:flex-start" data-op="biz" data-arg="${k}">Open</button></div>`).join("")}</div>`})()}`;
 }
+
+/* ---------- FORMS: one drawer for the smaller add / edit / view screens ---------- */
+let FX=null; // {title,tag,sub,fields,body(),save(vals),saveLbl,act(name,el),wide}
+function closeOthers(){BK=null;NB=null;AF=null;LM=null;ATN=false}
+function openFX(o){closeOthers();FX=Object.assign({err:""},o);renderFX()}
+function fxField(f){const v=f.val??"",id="fx_"+f.k,full=f.full?' style="grid-column:1/-1"':"";
+  const lbl=f.opt?`<span>${f.l} <span class="muted" style="font-weight:400">(optional)</span></span>`:f.l;
+  if(f.type==="select")return `<label class="field"${full}>${lbl}<select id="${id}">${f.opts.map(o=>{const [ov,ol]=Array.isArray(o)?o:[o,o];return `<option value="${esc(ov)}" ${String(ov)===String(v)?"selected":""}>${esc(ol)}</option>`}).join("")}</select></label>`;
+  if(f.type==="textarea")return `<label class="field" style="grid-column:1/-1">${lbl}<textarea id="${id}" rows="${f.rows||3}" ${f.ph?`placeholder="${esc(f.ph)}"`:""}>${esc(v)}</textarea></label>`;
+  if(f.type==="check")return `<label class="chk" style="grid-column:1/-1"><input type="checkbox" id="${id}" ${v?"checked":""}> ${f.l}</label>`;
+  if(f.type==="file")return `<label class="field"${full}>${lbl}<input type="file" id="${id}" ${f.accept?`accept="${f.accept}"`:""}>${v?`<span class="muted" style="font-size:12px">On file: ${esc(v)}</span>`:""}</label>`;
+  return `<label class="field"${full}>${lbl}<input id="${id}" type="${f.type==="number"?"text":f.type||"text"}" value="${esc(v)}" ${f.ph?`placeholder="${esc(f.ph)}"`:""} ${f.type==="number"?'inputmode="decimal" class="mono"':""}></label>`}
+function fxVals(){const o={};(FX.fields||[]).forEach(f=>{const el=$("fx_"+f.k);if(!el)return;
+  o[f.k]=f.type==="check"?el.checked:f.type==="file"?(el.files&&el.files[0]?el.files[0].name:f.val||""):f.type==="number"?el.value.trim():el.value;
+  if(f.type==="file"&&el.files&&el.files[0])o[f.k+"File"]=el.files[0]});return o}
+function renderFX(){const el=$("drawer"),f=FX;if(!f){el.innerHTML="";return}
+  el.innerHTML=`<div class="dw-scrim" data-fxclose></div><aside class="drawer ${f.wide?"wide":""}" role="dialog" aria-label="${esc(f.title)}"><div class="dw-h"><div>${f.tag?`<span class="pill plain" style="background:var(--sunk)">${esc(f.tag)}</span>`:""}<h2 class="dw-t">${esc(f.title)}</h2>${f.sub?`<p class="muted" style="margin:0">${f.sub}</p>`:""}</div><button class="btn small" data-fxclose aria-label="Close">✕</button></div>
+  <div class="dw-b">${f.body?f.body():""}${f.fields&&f.fields.length?`<div class="dw-grid">${f.fields.map(fxField).join("")}</div>`:""}
+  <div id="fxErr" class="err-b" ${f.err?"":"hidden"}>${esc(f.err)}</div>
+  ${f.save?`<div class="actions" style="margin-top:14px"><button class="btn primary" data-fxsave>${f.saveLbl||"Save"}</button><button class="btn" data-fxclose>Cancel</button></div>`:""}</div></aside>`}
+function fxSave(){const v=fxVals();(FX.fields||[]).forEach(f=>{if(f.k in v&&f.type!=="file")f.val=v[f.k]});
+  const miss=(FX.fields||[]).find(f=>f.req&&!String(v[f.k]??"").trim());
+  if(miss){FX.err=miss.l.replace(/<[^>]+>/g,"")+" is required.";renderFX();return}
+  const r=FX.save(v);if(typeof r==="string"){FX.err=r;renderFX();return}
+  FX=null;renderFX();render()}
+const nowStamp=()=>new Date().toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const todayStamp=()=>new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+
+/* ---------- CSV downloads (opens in Excel or Google Sheets) ---------- */
+function downloadCSV(name,rows){const q=v=>{v=v==null?"":String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const blob=new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"});const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);toast("Downloaded "+name)}
+
+/* ---------- MESSAGES: texts and emails the scheduler sends (logged here; delivery needs a messaging service) ---------- */
+function sendMsg(to,how,text){D.push("outbox",{at:nowStamp(),to,how,text,by:ME})}
+
+/* ---------- BUSINESS SETTINGS ---------- */
+const BIZ0={company:"Aeronautical Solutions & Strategies LLC",base:"KCMD · Cullman Regional",address:"",phone:"",email:"jonathon@aerostratsllc.com",
+  r22:295,r44:495,instr:65,ground:65,cxHrs:24,cxFee:50,minBal:150,wxPolicy:"No charge for weather or maintenance cancellations.",
+  loa:"",loaExp:"",dat:"",ins:"",insExp:"",
+  nConfirm:true,nRemind:true,nDispatch:true,nReceipt:true,nLowBal:true,
+  reader:"None yet",calSync:false,smsUrl:""};
+const biz=()=>Object.assign({},BIZ0,D.get("biz",{}));
+function applyBiz(){const b=biz();const r=AIRCRAFT.find(a=>a.tail==="N7187K"),q=AIRCRAFT.find(a=>a.tail==="N931QA");
+  if(r&&!(D.get("acRecords",{})["N7187K"]||{}).rate)r.rate=+b.r22||r.rate;if(q&&!(D.get("acRecords",{})["N931QA"]||{}).rate)q.rate=+b.r44||q.rate;RATE_NOW=+b.instr||65}
+let RATE_NOW=65;
+const BIZ_FORMS={
+  company:{t:"Company",f:[["company","Company name","text",1],["base","Base airport","text",1],["address","Address","text",0,1],["phone","Phone","tel",0],["email","Email","email",0]]},
+  rates:{t:"Rates",sub:"Hourly, by Hobbs. Changes apply to the next check-in.",f:[["r22","R22 aircraft rate ($/hr)","number",1],["r44","R44 aircraft rate ($/hr)","number",1],["instr","Flight instruction ($/hr)","number",1],["ground","Ground instruction ($/hr)","number",1]]},
+  policies:{t:"Policies",f:[["cxHrs","Free cancellation up to (hours before)","number",1],["cxFee","Late cancellation fee ($)","number",1],["minBal","Low balance warning under ($)","number",1],["wxPolicy","Weather and maintenance cancellations","textarea",0,1]]},
+  certs:{t:"Certificates",f:[["loa","91.147 LOA number","text",0],["loaExp","LOA expires","date",0],["dat","Drug and alcohol testing program","text",0,1],["ins","Insurance carrier","text",0],["insExp","Insurance expires","date",0]]},
+  notify:{t:"Notifications",sub:"Which texts and emails go out automatically.",f:[["nConfirm","Booking confirmations and changes","check"],["nRemind","Reminder the day before a lesson","check"],["nDispatch","Dispatch email with flight details and W&B","check"],["nReceipt","Receipts after check-in and sales","check"],["nLowBal","Low balance requests","check"]],body:()=>outboxHtml()},
+  integrations:{t:"Integrations",sub:"These connect in the live version. Saved here so setup is ready.",f:[["reader","Card reader","select",0,0,["None yet","Square","Stripe Terminal"]],["calSync","Send bookings to Google and Apple calendars","check"],["smsUrl","AS&S SMS web address","url",0,1]]}};
+function openBiz(k){const F=BIZ_FORMS[k],b=biz();
+  openFX({tag:"Business setup",title:F.t,sub:F.sub||"",body:F.body,fields:F.f.map(([key,l,type,req,full,opts])=>({k:key,l,type,req:!!req,full:!!full,opts,opt:!req&&type!=="check",val:b[key]})),
+    save(v){for(const [key,l,type] of F.f)if(type==="number"&&v[key]!==""&&!(+v[key]>=0))return l+" has to be a number.";
+      const cur=D.get("biz",{});F.f.forEach(([key,,type])=>{cur[key]=type==="number"?+v[key]:v[key]});D.set("biz",cur);applyBiz();toast(F.t+" saved")}})}
+function outboxHtml(){const L=D.get("outbox",[]).slice().reverse();
+  return `<div class="muted" style="font-size:12px;margin-bottom:6px">Sent messages (${L.length})</div>${L.length?`<div class="tbl-wrap" style="margin-bottom:14px;max-height:220px;overflow:auto"><table><tr><th>When</th><th>To</th><th>Message</th></tr>${L.slice(0,40).map(m=>`<tr><td style="white-space:nowrap">${m.at}</td><td>${esc(m.to)} <span class="muted" style="font-size:12px">${m.how}</span></td><td>${esc(m.text)}</td></tr>`).join("")}</table></div>`:`<p class="muted" style="margin:0 0 14px;font-size:13px">Nothing sent yet. Reminders, receipts and requests show up here.</p>`}`}
+
+/* ---------- PAYMENTS: one list for every payment taken ---------- */
+const PAY0=[
+  {at:"8:20 AM",from:"Walk-up group (3)",for:"Tour block · Around the Pattern + photos",method:"Tap · card",amt:105},
+  {at:"9:50 AM",from:"Walk-up group (3)",for:"Tour block · Run to Cullman",method:"Tap · Apple Pay",amt:180},
+  {at:"9:58 AM",from:"J. Snuffy",for:"F14 · aircraft + instruction",method:"Prepaid balance",amt:500.5},
+  {at:"10:28 AM",from:"Walk-up group (2)",for:"Tour block · Up n' Down",method:"Cash",amt:20}];
+const allPayments=()=>PAY0.concat(D.get("payments",[]));
+function recordPayment(from,what,method,amt){D.push("payments",{at:todayStamp(),from,for:what,method,amt:Math.round(amt*100)/100,by:ME})}
+function addFunds(x,amt,method){x.bal=Math.round((x.bal+amt)*100)/100;D.set("bal:"+x.name,x.bal);if(x.name==="J. Snuffy")D.set("alexBal",x.bal);
+  recordPayment(x.name,"Funds added to prepaid balance",method,amt);sendMsg(x.name,"Email","Receipt: "+money(amt)+" added to your prepaid balance. New balance "+money(x.bal)+".")}
+function openFunds(i){const x=STUDENTS[i];
+  openFX({tag:"Payments",title:"Add funds · "+x.name,sub:"Current balance "+money(x.bal)+". Take the payment, then save.",
+    fields:[{k:"amt",l:"Amount ($)",type:"number",req:true,val:"500"},{k:"method",l:"Payment",type:"select",opts:["Tap / swipe","Cash","Check"],val:"Tap / swipe"}],saveLbl:"Add funds",
+    save(v){const a=Math.round(parseFloat(v.amt)*100)/100;if(!(a>0))return "Enter an amount over $0.";if(a>20000)return "That's more than $20,000. Check the amount.";
+      addFunds(x,a,v.method);toast(money(a)+" added to "+x.name+". Receipt sent.")}})}
+
+/* ---------- AIRCRAFT: grounding and squawks ---------- */
+const SQ0=[{id:"sq0",tail:"N7187K",t:"Left door seal worn",by:"J. Snuffy at check-in",note:"Deferred by the mechanic, not an airworthiness item",ground:false}];
+const squawks=tail=>{const cl=D.get("sqCleared",{}),gr=D.get("sqGround",{});return SQ0.concat(D.get("squawks",[])).filter(q=>(!tail||q.tail===tail)&&!cl[q.id]).map(q=>gr[q.id]?Object.assign({},q,{ground:true}):q)};
+const grounded=tail=>{const g=D.get("grounded",{})[tail];if(g)return g;const q=squawks(tail).find(x=>x.ground);return q?{why:"Squawk: "+q.t,by:q.by,at:q.at||"",sq:q.id}:null};
+function openGround(tail){openFX({tag:tail,title:"Ground "+tail,sub:"Dispatch is blocked until it's returned to service. Pilots and students on today's bookings are notified.",
+  fields:[{k:"why",l:"Reason",type:"textarea",req:true,ph:"What's wrong, and who found it"}],saveLbl:"Ground aircraft",
+  save(v){const g=D.get("grounded",{});g[tail]={why:v.why.trim(),by:ME,at:nowStamp()};D.set("grounded",g);
+    BOOK.filter(b=>b.ac===tail&&b.st==="up").forEach(b=>[b.who,people(b).stu].filter(Boolean).forEach(n=>sendMsg(n,"Text",`${tail} is grounded (${v.why.trim()}). Your ${fmtH(b.s)} booking may change.`)));
+    toast(tail+" grounded. Dispatch is blocked.")}})}
+function openRTS(tail){const g=grounded(tail);if(g&&g.sq){toast("Clear the squawk to return "+tail+" to service.");return}
+  openFX({tag:tail,title:"Return "+tail+" to service",sub:"Grounded: "+esc(g?g.why:""),fields:[{k:"note",l:"What was done",type:"textarea",req:true,ph:"Repair, inspection, who signed it off"}],saveLbl:"Return to service",
+    save(v){const G=D.get("grounded",{});delete G[tail];D.set("grounded",G);D.push("mxLog",{tail,type:"Return to service",date:isoOf(today),note:v.note.trim(),by:ME});toast(tail+" returned to service.")}})}
+function openSquawk(tail){openFX({tag:tail,title:"Add squawk",sub:"Anything wrong with the aircraft. Grounding items block dispatch right away.",
+  fields:[{k:"t",l:"What you found",type:"text",req:true,full:true,ph:"e.g. Left door seal worn"},{k:"note",l:"Details",type:"textarea",opt:true},
+    {k:"ground",l:"Does it ground the aircraft?",type:"select",opts:[["no","No, flight can continue"],["yes","Yes, ground it until fixed"]],val:"no"},{k:"photo",l:"Photo",type:"file",accept:"image/*",opt:true}],saveLbl:"Add squawk",
+  save(v){D.push("squawks",{id:"sq"+Date.now(),tail,t:v.t.trim(),note:v.note.trim(),by:ME,at:nowStamp(),ground:v.ground==="yes",photo:v.photo||""});
+    toast(v.ground==="yes"?tail+" grounded for this squawk.":"Squawk added to "+tail+".")}})}
+function openClearSq(id){const q=squawks().find(x=>x.id===id);if(!q)return;
+  openFX({tag:q.tail,title:"Clear squawk",sub:esc(q.t),fields:[{k:"fix",l:"How it was fixed",type:"textarea",req:true,ph:"Repair and who signed it off"}],saveLbl:"Clear squawk",
+    save(v){const c=D.get("sqCleared",{});c[id]={fix:v.fix.trim(),by:ME,at:nowStamp()};D.set("sqCleared",c);D.push("mxLog",{tail:q.tail,type:"Squawk cleared",date:isoOf(today),note:q.t+": "+v.fix.trim(),by:ME});toast("Squawk cleared on "+q.tail+".")}})}
+function sqHtml(a){const L=squawks(a.tail);
+  return L.length?L.map(q=>`<div class="al ${q.ground?"bad":"warn"}"><span class="bar"></span><div><b>${esc(q.t)}</b><p>Reported by ${esc(q.by)}${q.at?" · "+q.at:""}${q.note?" · "+esc(q.note):""}${q.ground?" · <b>grounding</b>":""}${q.photo?" · photo "+esc(q.photo):""}</p>${ROLE==="desk"?"":`<div class="row"><button class="btn small" data-op="clearSq" data-arg="${q.id}">Clear</button>${q.ground?"":`<button class="btn small danger-ghost" data-op="groundSq" data-arg="${q.id}">Make grounding</button>`}</div>`}</div></div>`).join("")
+    :`<div class="empty-note">No open squawks.</div>`}
+
+/* ---------- STUDENTS ---------- */
+function openAddStudent(){openFX({tag:"Students",title:"Add student",sub:"They get a text with a link to set up the student app and upload documents.",
+  fields:[{k:"name",l:"Name",req:true,ph:"First and last name"},{k:"phone",l:"Phone",type:"tel",req:true},{k:"email",l:"Email",type:"email",opt:true},
+    {k:"prog",l:"Program",type:"select",opts:sylList().filter(s=>s.st!=="Draft").map(s=>s.n),val:"Private Pilot – Helicopter (Part 61)"},
+    {k:"instr",l:"Instructor",type:"select",opts:CFI.length?CFI:["J. Nichols"]},{k:"med",l:"Medical",type:"select",opts:["Pending upload","1st class","2nd class","3rd class","BasicMed"],val:"Pending upload"},
+    {k:"emer",l:"Emergency contact",opt:true,full:true,ph:"Name and phone"},{k:"bal",l:"Starting balance ($)",type:"number",val:"0"}],saveLbl:"Add student",
+  save(v){const n=v.name.trim();if(STUDENTS.some(s=>s.name.toLowerCase()===n.toLowerCase()))return n+" is already a student.";
+    const b=parseFloat(v.bal)||0;if(b<0)return "Starting balance can't be negative.";
+    const x={name:n,prog:v.prog,f:0,g:0,hrs:0,bal:b,instr:v.instr,med:v.med==="Pending upload"?"Pending upload":v.med,status:"Enrolling",next:"—",phone:v.phone.trim(),email:v.email.trim(),emer:v.emer.trim(),added:true};
+    D.push("students",x);STUDENTS.push(x);if(b>0)recordPayment(n,"Opening prepaid balance","Tap / swipe",b);
+    sendMsg(n,"Text","Welcome to AS&S flight training. Set up your student app and upload your documents: (link)");selStudent=STUDENTS.length-1;toast(n+" added. Welcome text sent.")}})}
+function openMedical(i){const x=STUDENTS[i];openFX({tag:x.name,title:"Medical certificate",fields:[{k:"cls",l:"Class",type:"select",opts:["1st class","2nd class","3rd class","BasicMed"],val:"3rd class"},
+  {k:"exp",l:"Expires",type:"date",req:true},{k:"file",l:"Photo or PDF",type:"file",accept:"image/*,.pdf",req:true}],saveLbl:"Save medical",
+  save(v){const d=new Date(v.exp+"T12:00");if(isNaN(d))return "Pick the expiration date.";x.med=v.cls+" · "+d.toLocaleDateString([],{month:"short",year:"numeric"});D.set("med:"+x.name,x.med);toast("Medical on file for "+x.name+".")}})}
+function sylLessons(){const ed=D.get("sylEdits",{});return D.SYL.map(st=>({name:st.name,items:st.items.map(([c,t,du,so,gr])=>({c,t:ed[c]||t,du,so,gr}))}))}
+function openRecord(i){const x=STUDENTS[i],L=sylLessons().flatMap(s=>s.items),ci=D.get("checkins",[]).filter(c=>c.stu===x.name),ls=x.name==="J. Snuffy"?D.get("lessons",[]):[];
+  const fN=+String(x.f),gN=+String(x.g);const done=l=>l.c[0]==="F"?+l.c.slice(1)<=fN:+l.c.slice(1)<=gN;
+  const rows=L.map(l=>{const today_=ci.find(c=>c.l===l.c)||ls.find(c=>c.code===l.c);const st=today_?"Done today":done(l)?"Complete":"";return [l,st,today_]});
+  openFX({tag:"Training record",title:x.name,sub:`${esc(x.prog)} · ${x.f} flight / ${x.g} ground lessons · ${x.hrs.toFixed(1)} hr`,wide:true,
+    body:()=>`<div class="actions" style="margin-bottom:10px"><button class="btn small" data-fxact="csv">Download CSV</button><button class="btn small" data-fxact="print">Print</button></div>
+    <div class="tbl-wrap"><table><tr><th>Lesson</th><th>Title</th><th class="num">Dual</th><th class="num">Solo</th><th class="num">Ground</th><th>Status</th></tr>
+    ${rows.map(([l,st,t])=>`<tr><td class="mono">${l.c}</td><td>${esc(l.t)}${t?`<div class="muted" style="font-size:12px">${t.fl!=null?t.fl.toFixed(1)+" hr flight":""}${t.gr?" · "+(+t.gr).toFixed(1)+" hr ground":""}</div>`:""}</td><td class="num">${l.du||""}</td><td class="num">${l.so||""}</td><td class="num">${l.gr||""}</td><td>${st?`<span class="pill ok plain">${st}</span>`:'<span class="muted">—</span>'}</td></tr>`).join("")}</table></div>`,
+    act(k){if(k==="csv")downloadCSV(x.name.replace(/\W+/g,"_")+"_training_record.csv",[["Lesson","Title","Dual","Solo","Ground","Status"],...rows.map(([l,st])=>[l.c,l.t,l.du,l.so,l.gr,st||""])]);
+      if(k==="print")window.print()}})}
+
+/* ---------- STAFF ---------- */
+const INFO0={"J. Nichols":{acct:"Owner · Pilot",phone:"",email:"jonathon@aerostratsllc.com",medCls:"2nd class",medExp:"",r22:true,r44:true,safety:true},
+  "M. Houston":{acct:"Pilot",phone:"",email:"",medCls:"2nd class",medExp:"2026-11-24",r22:true,r44:true},
+  "R. Ellis":{acct:"Pilot",phone:"",email:"",medCls:"2nd class",medExp:"",r22:false,r44:true}};
+const staffInfo=n=>Object.assign({acct:"Pilot",phone:"",email:"",medCls:"2nd class",medExp:"",r22:true,r44:true},INFO0[n]||{},(D.get("staffInfo",{}))[n]||{});
+function perms(k){const P0={desk:{tour:true,sched:true,checkin:true,pay:true},mech:{rts:true}};return Object.assign({},P0[k],(D.get("perms",{}))[k]||{})}
+function medTxt(i){if(!i.medExp)return esc(i.medCls);const d=daysTo(i.medExp);return d<0?`<span class="pill bad">Expired</span>`:d<=30?`<span class="pill warn">Expires ${fmtD(i.medExp)}</span>`:`${esc(i.medCls)} · ${fmtD(i.medExp)}`}
+function openEditStaff(n){const i=staffInfo(n);openFX({tag:"Staff",title:n,
+  fields:[{k:"phone",l:"Phone",type:"tel",val:i.phone,opt:true},{k:"email",l:"Email",type:"email",val:i.email,opt:true},{k:"medCls",l:"Medical class",type:"select",opts:["1st class","2nd class","3rd class","BasicMed"],val:i.medCls},
+    {k:"medExp",l:"Medical expires",type:"date",val:i.medExp,opt:true},{k:"r22",l:"Current in the R22",type:"check",val:i.r22},{k:"r44",l:"Current in the R44",type:"check",val:i.r44}],
+  save(v){const S=D.get("staffInfo",{});S[n]=Object.assign(S[n]||{},v);D.set("staffInfo",S);toast(n+" updated.")}})}
+function openPerms(k){const p=perms(k),L=k==="desk"?[["tour","Tour desk: check in groups, take payment"],["sched","Schedule changes: book, move, cancel"],["checkin","Close tour blocks when the pilot can't"],["pay","Take payments and add funds"]]:[["rts","Return aircraft to service"],["squawk","Clear squawks"]];
+  openFX({tag:"Permissions",title:k==="desk"?"Operations":"A&P mechanic",fields:L.map(([key,l])=>({k:key,l,type:"check",val:p[key]})),
+    save(v){const P=D.get("perms",{});P[k]=v;D.set("perms",P);toast("Permissions saved.")}})}
+function openInvite(){openFX({tag:"Staff",title:"Invite staff",sub:"They get an email to set up their login. All staff are 1099 contractors.",
+  fields:[{k:"name",l:"Name",req:true,ph:"First initial and last name, e.g. K. Lane"},{k:"email",l:"Email",type:"email",req:true},{k:"phone",l:"Phone",type:"tel",opt:true},
+    {k:"acct",l:"Account type",type:"select",opts:["Pilot","Operations","Ground crew","Mechanic"]},{k:"rate",l:"Pay rate ($/hr)",type:"number",val:"35"},
+    {k:"instructor",l:"Pilot role: Instructor",type:"check",val:true},{k:"tour",l:"Pilot role: Tour",type:"check",val:false},{k:"job",l:"Pilot role: AS&S jobs",type:"check",val:false},{k:"sched",l:"Pilot role: Schedule changes",type:"check",val:false}],saveLbl:"Send invite",
+  save(v){const n=v.name.trim();if(PEOPLE.some(p=>p.name===n)||STAFF.some(p=>p.name===n))return n+" is already on staff.";const r=parseFloat(v.rate);if(!(r>0))return "Enter the pay rate.";
+    if(!/^\S+@\S+\.\S+$/.test(v.email.trim()))return "Enter a valid email.";
+    D.push("staffAdded",{name:n,acct:v.acct,rate:r});const S=D.get("staffInfo",{});S[n]={acct:v.acct,phone:v.phone,email:v.email.trim()};D.set("staffInfo",S);
+    if(v.acct==="Pilot"){const R=D.get("pilotRoles",{});R[n]={instructor:v.instructor,tour:v.tour,job:v.job,sched:v.sched};D.set("pilotRoles",R)}
+    addStaff({name:n,acct:v.acct,rate:r});refreshRoles();sendMsg(n,"Email","You're invited to the AS&S scheduler. Set up your login: (link)");toast("Invite sent to "+v.email.trim()+".")}})}
+function addStaff(s){if(s.acct==="Pilot"){if(!PEOPLE.some(p=>p.name===s.name))PEOPLE.push({name:s.name,role:"Pilot",flight:s.rate,ground:Math.round(s.rate*0.6)})}
+  else if(!STAFF.some(p=>p.name===s.name))STAFF.push({name:s.name,role:s.acct,rate:s.rate,ytd:0})}
+
+/* ---------- SYLLABUS LIBRARY ---------- */
+const SYLB0=[{id:"pp61",n:"Private Pilot – Helicopter (Part 61)",st:"Active · v1",d:"Robinson Flight Training Guide (R22/R44) · 3 stages · 39 flight · 19 ground lessons · avg 40 dual / 10 solo / 35 ground hr",base:true},
+  {id:"cm61",n:"Commercial – Helicopter (Part 61)",st:"Draft",d:"Not built yet",lessons:[]},
+  {id:"pp141",n:"Private Pilot – Helicopter (Part 141)",st:"Framework",d:"Course framework drafted",lessons:[],info:"Part 141 needs an FAA-approved training course outline (TCO), a chief instructor and stage checks. This framework follows the Part 61 lessons and adds stage checks at the end of each stage."},
+  {id:"disc",n:"Discovery flight",st:"Template",d:"1 flight lesson · 0.5 hr dual · intro briefing",lessons:[{c:"D1",t:"Intro briefing, preflight and first flight at the controls",ty:"Flight",h:0.5}]}];
+function sylList(){const ed=D.get("sylSaved",{});return SYLB0.map(s=>Object.assign({},s,ed[s.id]||{})).concat(D.get("syllabi",[]).map(s=>Object.assign({},s,ed[s.id]||{})))}
+function enrolled(n){return STUDENTS.filter(x=>x.prog===n).length}
+function openApply(id){const s=sylList().find(x=>x.id===id);openFX({tag:"Syllabus",title:"Apply "+s.n,sub:"The student's program and lesson list switch to this syllabus. Completed lessons stay on their record.",
+  fields:[{k:"stu",l:"Student",type:"select",opts:STUDENTS.filter(x=>x.prog!==s.n).map(x=>x.name)}],saveLbl:"Apply",
+  save(v){const x=STUDENTS.find(q=>q.name===v.stu);if(!x)return "Pick a student.";x.prog=s.n;const P=D.get("prog",{});P[x.name]=s.n;D.set("prog",P);toast(x.name+" is now on "+s.n+".")}})}
+function openSylEdit(){const L=sylLessons();
+  openFX({tag:"Syllabus",title:"Private Pilot – Helicopter (Part 61)",sub:"Rename lessons to match how you teach them. Hours come from the Robinson guide.",wide:true,
+    body:()=>L.map(st=>`<div class="muted" style="font-size:12px;margin:12px 0 4px;font-weight:600">${esc(st.name)}</div><div class="tbl-wrap"><table>${st.items.map(l=>`<tr><td class="mono" style="width:52px">${l.c}</td><td><input class="sylin" data-sylc="${l.c}" value="${esc(l.t)}" aria-label="${l.c} title" style="width:100%"></td><td class="num" style="white-space:nowrap;font-size:12px">${[l.du&&l.du+" dual",l.so&&l.so+" solo",l.gr&&l.gr+" ground"].filter(Boolean).join(" · ")}</td></tr>`).join("")}</table></div>`).join(""),
+    save(){const ed={},base=D.SYL.flatMap(s=>s.items);document.querySelectorAll("[data-sylc]").forEach(i=>{const o=base.find(x=>x[0]===i.dataset.sylc);const v=i.value.trim();if(v&&o&&v!==o[1])ed[i.dataset.sylc]=v});D.set("sylEdits",ed);toast("Syllabus saved.")}})}
+function openBuilder(id){const ex=id?sylList().find(x=>x.id===id):null,W={n:ex?ex.n:"",lessons:(ex&&ex.lessons||[]).map(l=>Object.assign({},l)),file:ex&&ex.file||""};
+  if(!W.lessons.length)W.lessons.push({c:"F1",t:"",ty:"Flight",h:1});
+  const grab=()=>{W.n=($("syn")||{}).value??W.n;document.querySelectorAll("[data-sl]").forEach(r=>{const l=W.lessons[+r.dataset.sl];l.c=r.querySelector("[data-f=c]").value.trim();l.t=r.querySelector("[data-f=t]").value;l.ty=r.querySelector("[data-f=ty]").value;l.h=parseFloat(r.querySelector("[data-f=h]").value)||0})};
+  openFX({tag:"Syllabus builder",title:ex?ex.n:"New syllabus",sub:"Add lessons in order. Save as a draft and finish later, or make it active to enroll students.",wide:true,
+    body:()=>`<label class="field">Syllabus name<input id="syn" value="${esc(W.n)}" placeholder="e.g. Commercial – Helicopter (Part 61)"></label>${W.file?`<p class="muted" style="font-size:12px">From file: ${esc(W.file)}</p>`:""}
+    <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>Code</th><th>Lesson</th><th>Type</th><th class="num">Hours</th><th></th></tr>${W.lessons.map((l,i)=>`<tr data-sl="${i}"><td><input data-f="c" value="${esc(l.c)}" style="width:56px" class="mono" aria-label="Code"></td><td><input data-f="t" value="${esc(l.t)}" style="width:100%" aria-label="Lesson title" placeholder="What's covered"></td><td><select data-f="ty" aria-label="Type">${["Flight","Ground","Solo","Stage check"].map(o=>`<option ${o===l.ty?"selected":""}>${o}</option>`).join("")}</select></td><td class="num"><input data-f="h" value="${l.h}" style="width:56px" class="mono" inputmode="decimal" aria-label="Hours"></td><td><button class="btn small" data-fxact="del" data-i="${i}" aria-label="Remove lesson">✕</button></td></tr>`).join("")}</table></div>
+    <div class="actions" style="margin-top:10px"><button class="btn small" data-fxact="add">Add lesson</button><button class="btn small" data-fxact="active">Save and make active</button></div>`,
+    act(k,el){grab();if(k==="add"){const f=W.lessons.filter(l=>/^F/.test(l.c)).length;W.lessons.push({c:"F"+(f+1),t:"",ty:"Flight",h:1})}
+      if(k==="del")W.lessons.splice(+el.dataset.i,1);
+      if(k==="active"){FX.active=true;fxSave()}},
+    saveLbl:"Save draft",
+    save(){grab();if(!W.n.trim())return "Name the syllabus.";const L=W.lessons.filter(l=>l.c||l.t.trim());if(FX.active&&!L.length)return "Add at least one lesson before making it active.";
+      if(FX.active&&L.some(l=>!l.t.trim()))return "Every lesson needs a title before it's active.";
+      const fl=L.filter(l=>l.ty!=="Ground").length,gr=L.filter(l=>l.ty==="Ground").length,hr=L.reduce((t,l)=>t+l.h,0);
+      const rec={n:W.n.trim(),lessons:L,st:FX.active?"Active · v1":"Draft",d:`${fl} flight · ${gr} ground lessons · ${hr.toFixed(1)} hr`,file:W.file};
+      if(ex&&!ex.added){const S=D.get("sylSaved",{});S[ex.id]=rec;D.set("sylSaved",S)}
+      else if(ex){const A=D.get("syllabi",[]),k=A.findIndex(x=>x.id===ex.id);A[k]=Object.assign(A[k],rec);D.set("syllabi",A)}
+      else D.push("syllabi",Object.assign({id:"s"+Date.now(),added:true},rec));
+      toast(rec.n+(FX.active?" is active.":" saved as a draft."))}})}
+function openUpload(){openFX({tag:"Syllabus",title:"Upload a syllabus",sub:"A CSV is read into lessons (code, title, type, hours). A PDF or Word file is attached to a draft you fill in.",
+  fields:[{k:"file",l:"Syllabus file",type:"file",accept:".csv,.pdf,.doc,.docx",req:true}],saveLbl:"Make draft",
+  save(v){const f=v.fileFile,base=v.file.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ");
+    const make=lessons=>{D.push("syllabi",{id:"s"+Date.now(),added:true,n:base,st:"Draft",file:v.file,lessons,d:lessons.length?lessons.length+" lessons from "+v.file:"From "+v.file+" · lessons to add"});render();toast("Draft made from "+v.file+". Open it to review.")};
+    if(f&&/\.csv$/i.test(f.name)){f.text().then(t=>{const L=t.split(/\r?\n/).map(r=>r.split(",").map(c=>c.replace(/^"|"$/g,"").trim())).filter(r=>r[0]&&!/^code$/i.test(r[0])).map(r=>({c:r[0],t:r[1]||"",ty:r[2]||"Flight",h:parseFloat(r[3])||0}));make(L)});return}
+    make([])}})}
+function openSylView(id){const s=sylList().find(x=>x.id===id);openFX({tag:s.st,title:s.n,sub:esc(s.d),
+  body:()=>`${s.info?`<p style="margin-top:0">${esc(s.info)}</p>`:""}${(s.lessons||[]).length?`<div class="tbl-wrap"><table><tr><th>Code</th><th>Lesson</th><th>Type</th><th class="num">Hours</th></tr>${s.lessons.map(l=>`<tr><td class="mono">${esc(l.c)}</td><td>${esc(l.t)}</td><td>${l.ty}</td><td class="num">${l.h}</td></tr>`).join("")}</table></div>`:`<p class="muted">No lessons yet.</p>`}
+  <div class="actions" style="margin-top:12px"><button class="btn primary" data-fxact="edit">${s.st==="Draft"?"Continue building":"Edit lessons"}</button></div>`,
+  act(k){if(k==="edit")openBuilder(id)}})}
+
+/* ---------- SAFETY ---------- */
+const SR0=[{d:-2,type:"Hazard",t:"FOD near fuel pit after mowing",st:"Sent to AS&S SMS"},{d:-9,type:"Near miss",t:"Fixed-wing traffic on helicopter pattern",st:"Sent to AS&S SMS"}];
+function openReport(){openFX({tag:"Safety",title:"File a safety report",sub:"Goes to the safety manager and the AS&S SMS. Reports can be anonymous.",
+  fields:[{k:"type",l:"Type",type:"select",opts:["Hazard","Near miss","Incident","Maintenance concern","Other"]},{k:"ac",l:"Aircraft",type:"select",opts:["None",...AIRCRAFT.map(a=>a.tail)]},
+    {k:"t",l:"Summary",req:true,full:true,ph:"One line: what happened or what you saw"},{k:"det",l:"Details",type:"textarea",opt:true},{k:"anon",l:"Submit anonymously",type:"check"}],saveLbl:"Submit report",
+  save(v){D.push("safety",{at:isoOf(today),type:v.type,ac:v.ac,t:v.t.trim(),det:v.det.trim(),by:v.anon?"Anonymous":ME,st:"Sent to AS&S SMS"});
+    sendMsg("J. Nichols (safety manager)","Email","New "+v.type.toLowerCase()+" report: "+v.t.trim());toast("Report submitted. Thank you.")}})}
+function openFRAT(){openFX({tag:"FRAT · score 16 · high",title:"1:00 PM tour block · N931QA",sub:"R. Ellis can't dispatch until the owner approves.",
+  body:()=>`<div class="tbl-wrap"><table><tr><th>Factor</th><th class="num">Points</th></tr>${[["Gusts forecast 22 kt",5],["Back-to-back loads (5+)",4],["Pilot duty day over 8 hr",3],["Density altitude 1,450 ft",1],["Ramp congestion: event at the airport",3]].map(([f,p])=>`<tr><td>${f}</td><td class="num">${p}</td></tr>`).join("")}<tr><td><b>Total</b> · 0–9 low, 10–14 medium, 15+ high</td><td class="num"><b>16</b></td></tr></table></div>
+  <p class="muted" style="font-size:13px">Mitigations from the pilot: cap loads at 2 passengers when gusts exceed 20 kt; 15-minute break after the third load.</p>
+  <div class="actions"><button class="btn primary" data-fxact="ok">Approve</button><button class="btn danger-ghost" data-fxact="no">Don't approve</button></div>`,
+  act(k){if(k==="ok"){D.set("fratOk",true);FX=null;renderFX();render();toast("FRAT approved. R. Ellis can now dispatch the 1:00 PM tour block.");return "stop"}
+    if(k==="no"){sendMsg("R. Ellis","Text","The 1:00 PM tour block FRAT was not approved. Call J. Nichols.");FX=null;renderFX();toast("Not approved. R. Ellis has been told.");return "stop"}}})}
+
+/* ---------- REPORTS ---------- */
+function reportData(k){
+  if(k==="ops"){const done=BOOK.filter(b=>b.st==="done"&&b.ac),byAc={};done.forEach(b=>{const h=b.flHrs??(b.e-b.s);const r=byAc[b.ac]=byAc[b.ac]||{};r[b.type]=(r[b.type]||0)+h});
+    const pay=allPayments().reduce((t,p)=>t+p.amt,0),sales=allSales().reduce((t,x)=>t+x.total,0);
+    const rows=[["Aircraft","Dual","Solo","Tour","AS&S","Total hr"],...AIRCRAFT.map(a=>{const r=byAc[a.tail]||{},f=t=>(r[t]||0).toFixed(1);return [a.tail,f("dual"),f("solo"),f("tour"),f("job"),Object.values(r).reduce((t,x)=>t+x,0).toFixed(1)]})];
+    return {title:"Operations wrap-up",sub:"Today so far, from check-ins",rows,extra:[["Payments taken",money(pay)],["Item sales",money(sales)],["Students",STUDENTS.length+" · "+STUDENTS.filter(x=>x.status!=="Enrolling").length+" in training"],["Safety reports this month",String(SR0.length+D.get("safety",[]).length)],["Open squawks",String(squawks().length)]]}}
+  const by={};payLines().forEach(l=>{const r=by[l.who]=by[l.who]||{fl:0,gr:0,hr:0,pay:0};r.fl+=l.fl||0;r.gr+=l.gr||0;r.hr+=l.hrs||0;r.pay+=l.amt||0});
+  return {title:"Contractor hours",sub:"Pay period "+PERIOD.label,rows:[["Name","Flight hr","Ground hr","Logged hr","Pay"],...Object.entries(by).map(([n,r])=>[n,r.fl?r.fl.toFixed(1):"—",r.gr?r.gr.toFixed(1):"—",r.hr?r.hr.toFixed(2):"—",money(r.pay)])]}}
+function openReportView(k){const R=reportData(k);openFX({tag:"Report",title:R.title,sub:R.sub,wide:true,
+  body:()=>`<div class="tbl-wrap"><table>${R.rows.map((r,i)=>`<tr>${r.map((c,j)=>i?`<td class="${j?"num":""}">${esc(c)}</td>`:`<th class="${j?"num":""}">${c}</th>`).join("")}</tr>`).join("")}</table></div>
+  ${R.extra?`<div class="kv" style="margin-top:14px">${R.extra.map(([a,b])=>`<span>${a}</span><span>${esc(b)}</span>`).join("")}</div>`:""}
+  <div class="actions" style="margin-top:14px"><button class="btn" data-fxact="csv">Download CSV</button><button class="btn" data-fxact="print">Print</button></div>`,
+  act(a){if(a==="csv")downloadCSV(R.title.replace(/\W+/g,"_")+".csv",R.rows.concat(R.extra||[]));if(a==="print")window.print()}})}
+
+/* ---------- ALERT ACTIONS ---------- */
+function openCall(n){const i=staffInfo(n),ph=i.phone||"(256) 555-0177";openFX({tag:"Call",title:n,body:()=>`<p style="margin-top:0">${esc(i.acct)} · <a href="tel:${ph.replace(/[^\d+]/g,"")}">${esc(ph)}</a></p><div class="actions"><a class="btn primary" href="tel:${ph.replace(/[^\d+]/g,"")}">Call</a><a class="btn" href="sms:${ph.replace(/[^\d+]/g,"")}">Text</a></div>${i.phone?"":'<p class="muted" style="font-size:12px">Sample number. Add the real one in Staff &amp; permissions → Edit.</p>'}`})}
+
+/* ---------- one click handler for everything above ---------- */
+const OPS={
+  addSquawk:a=>openSquawk(a),clearSq:a=>openClearSq(a),
+  groundSq:a=>{const G=D.get("sqGround",{});G[a]=true;D.set("sqGround",G);render();toast("Aircraft grounded for this squawk.")},
+  ground:a=>openGround(a),rts:a=>openRTS(a),
+  addStudent:()=>openAddStudent(),record:a=>openRecord(+a),funds:a=>openFunds(+a),medical:a=>openMedical(+a),
+  invite:()=>openInvite(),editStaff:a=>openEditStaff(a),perms:a=>openPerms(a),
+  apply:a=>openApply(a),sylEdit:()=>openSylEdit(),build:a=>openBuilder(a||null),upload:()=>openUpload(),sylView:a=>openSylView(a),
+  report:()=>openReport(),reportView:a=>openReportView(a),biz:a=>openBiz(a),
+  exportPay:()=>downloadCSV("Pay_"+PERIOD.label.replace(/\W+/g,"_")+".csv",[["Date","Contractor","Student / work","Lesson","Flight hr","Ground hr","Pay"],...payLines().map(l=>[fmtDate(addDays(today,l.d)),l.who,l.stu||"",l.l||"",l.fl??"",l.gr??"",(l.amt||0).toFixed(2)])]),
+  exportPayments:()=>downloadCSV("Payments_"+isoOf(today)+".csv",[["Time","From","For","Method","Amount"],...allPayments().map(p=>[p.at,p.from,p.for,p.method,p.amt.toFixed(2)]),[],["Item sales"],["Time","Buyer","Items","Method","Tax","Total"],...allSales().map(x=>[x.at,x.buyer,x.items.map(([n,q])=>n+(q>1?" x "+q:"")).join("; "),x.method,x.tax.toFixed(2),x.total.toFixed(2)])]),
+  approvePeriod:()=>{D.set("periodOk:"+PERIOD.label,{by:ME,at:nowStamp()});sendMsg("All contractors","Email","Pay period "+PERIOD.label+" is approved. Your final totals are in the app.");render();toast("Period approved. Contractors can see their final totals.")},
+  reopenPeriod:()=>{const k="periodOk:"+PERIOD.label;D.set(k,null);render();toast("Period reopened for changes.")},
+  call:a=>openCall(a),frat:()=>openFRAT(),
+  remind:a=>{sendMsg(a,"Text","Reminder: your medical expires soon. Upload the new one in the app when you have it.");const R=D.get("reminded",{});R[a]=nowStamp();D.set("reminded",R);render();toast("Reminder sent to "+a+".")},
+  reqFunds:a=>{const x=STUDENTS.find(s=>s.name===a);sendMsg(a,"Text",`Your AS&S balance is ${money(x?x.bal:0)}. Please add funds before your next lesson: (link)`);const R=D.get("reminded",{});R[a]=nowStamp();D.set("reminded",R);render();toast("Request sent to "+a+".")}
+};
+
+function payLines(){const H=allHours().filter(inP);return [...PAY.filter(inP).map(l=>{const p=PEOPLE.find(x=>x.name===l.who)||{flight:0,ground:0};return {d:l.d,who:l.who,stu:l.stu,l:l.l,fl:l.fl,gr:l.gr,amt:l.waived?0:l.fl*p.flight+l.gr*p.ground}}),
+  ...H.map(h=>{const p=STAFF.find(x=>x.name===h.who)||{rate:0,role:""};return {d:h.d,who:h.who,stu:h.note||p.role,l:"Hours",fl:null,gr:null,hrs:hrsOf(h),amt:hrsOf(h)*p.rate}})]}
 
 /* ---------- render + events ---------- */
 const VIEWFN={sell:vSell,hours:vHours,today:vToday,schedule:vSchedule,pay:vPay,students:vStudents,syllabus:vSyllabus,aircraft:vAircraft,tours:vTours,billing:vBilling,safety:vSafety,staff:vStaff,reports:vReports,admin:vAdmin};
@@ -1423,7 +1673,7 @@ function tlX(h){const ln=document.querySelector(".tl-lane");return ln?Math.max(0
 function render(){const w=document.querySelector(".tl-wrap");if(w)TL_X=w.scrollLeft;const y=window.scrollY;
   applyLive();renderNav();$("work").innerHTML=VIEWFN[view]();$("work").classList.toggle("short",view==="tours");$("tourHost").hidden=view!=="tours";if(view==="tours")mountTourFrame();if(ATN){if(!ALERTS.length)ATN=false;renderATN()}
   const w2=document.querySelector(".tl-wrap");if(w2)w2.scrollLeft=TL_X!=null?TL_X:tlX(NOW-0.5); /* opens at the current time */if(Math.abs(window.scrollY-y)>1)window.scrollTo(0,y);}
-function go(v){if(!VIEWFN[v])v="today";view=v;if(typeof BK!=="undefined"&&BK){BK=null;renderBk()}if(typeof NB!=="undefined"&&NB){NB=null;renderNB()}if(typeof AF!=="undefined"&&AF){AF=null;renderAF()}if(typeof ATN!=="undefined"&&ATN){ATN=false;renderATN()}if(typeof LM!=="undefined"&&LM){LM=null;renderLM()}$("shell").classList.remove("menu");const sc=document.querySelector(".scrim");if(sc)sc.remove();render();window.scrollTo(0,0);try{if(location.hash!=="#"+v)history.replaceState(null,"","#"+v)}catch(e){}}
+function go(v){if(!VIEWFN[v])v="today";view=v;if(typeof BK!=="undefined"&&BK){BK=null;renderBk()}if(typeof NB!=="undefined"&&NB){NB=null;renderNB()}if(typeof AF!=="undefined"&&AF){AF=null;renderAF()}if(typeof ATN!=="undefined"&&ATN){ATN=false;renderATN()}if(typeof LM!=="undefined"&&LM){LM=null;renderLM()}if(typeof FX!=="undefined"&&FX){FX=null;renderFX()}$("shell").classList.remove("menu");const sc=document.querySelector(".scrim");if(sc)sc.remove();render();window.scrollTo(0,0);try{if(location.hash!=="#"+v)history.replaceState(null,"","#"+v)}catch(e){}}
 /* message with an Undo button; the change notice goes out only if it isn't undone */
 function toastUndo(m,undo){let t=document.querySelector(".toast");if(t)t.remove();clearTimeout(tt);t=document.createElement("div");t.className="toast undo";t.setAttribute("role","status");
   t.innerHTML=`<span></span><button type="button">Undo</button>`;t.querySelector("span").textContent=m+" Notice goes out in a few seconds.";document.body.appendChild(t);
@@ -1432,6 +1682,11 @@ let tt;function toast(m){let t=document.querySelector(".toast");if(!t){t=documen
 
 document.addEventListener("click",e=>{
   if(justDragged){justDragged=false;return}
+  const fx=e.target.closest("[data-fxclose],[data-fxsave],[data-fxact]");
+  if(fx&&FX){if(fx.hasAttribute("data-fxclose")){FX=null;renderFX();return}
+    if(fx.hasAttribute("data-fxsave")){fxSave();return}
+    if(fx.dataset.fxact&&FX.act){const vals=fxVals();(FX.fields||[]).forEach(f=>{if(f.k in vals&&f.type!=="file")f.val=vals[f.k]});const cur=FX;const r=FX.act(fx.dataset.fxact,fx);if(r!=="stop"&&FX===cur)renderFX();return}}
+  const op=e.target.closest("[data-op]");if(op&&OPS[op.dataset.op]){e.preventDefault();OPS[op.dataset.op](op.dataset.arg,op);return}
   const tj=e.target.closest("[data-tljump]");if(tj){const w=document.querySelector(".tl-wrap"),k=tj.dataset.tljump,vis=w.clientWidth-(document.querySelector(".tl-label")||{offsetWidth:150}).offsetWidth,pxh=(document.querySelector(".tl-lane").offsetWidth)/TLS;
     const x=k==="early"?0:k==="7"?tlX(DAY0):k==="eve"?tlX(17):Math.max(0,tlX(NOW)-vis*0.25);w.scrollTo({left:x,behavior:"smooth"});return}
   if(!e.target.closest(".blk")){const ln=e.target.closest("[data-lane]");if(ln){const r=ln.getBoundingClientRect(),f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));openNew(ln.dataset.lane,ln.dataset.lid,TL0+Math.floor(f*TLS*4)/4);return}}
@@ -1500,7 +1755,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.role){D.go(t.dataset.role);return}
   if(t.dataset.guide){D.set("guideHidden",t.dataset.guide==="hide");render();return}
   if(t.dataset.docok){const d=D.get("docs",{});d.spc="ok";D.set("docs",d);render();toast("Approved. J. Snuffy gets a text that his student pilot certificate is on file.");return}
-  if(t.dataset.fund){const x=STUDENTS[+t.dataset.fund],v=+t.dataset.amt;x.bal=Math.round((x.bal+v)*100)/100;D.set("bal:"+x.name,x.bal);if(x.name==="J. Snuffy")D.set("alexBal",x.bal);render();toast(money(v)+" added to "+x.name+". Receipt sent.");return}
+  if(t.dataset.fund){const x=STUDENTS[+t.dataset.fund],v=+t.dataset.amt;addFunds(x,v,"Tap / swipe");render();toast(money(v)+" added to "+x.name+". Receipt sent.");return}
   if(t.dataset.nav)return go(t.dataset.nav);
   if(t.dataset.dismiss){dismissed.add(t.dataset.dismiss);render();return}
   if(t.dataset.alert){const a=ALERTS.find(x=>x.id===t.dataset.alert),act=t.dataset.alact;
@@ -1509,9 +1764,11 @@ document.addEventListener("click",e=>{
     if(act==="Open student"){selStudent=0;return go("students")}
     if(act==="Open tours"){return go("tours")}
     if(act==="View limits"){selAc="N931QA";return go("aircraft")}
+    if(act==="View aircraft"){selAc=a.id.slice(1);return go("aircraft")}
     if(act==="Open squawk"){selAc="N7187K";return go("aircraft")}
     if(act==="Open block"){go("tours");return}
-    toast(act+": this action is mapped but not built yet");return}
+    if(act==="Call pilot")return openCall("R. Ellis");if(act==="Review FRAT")return openFRAT();if(act==="Send reminder")return OPS.remind("M. Houston");if(act==="Request funds")return OPS.reqFunds("Sam Patel");
+    toast(act);return}
   if(t.dataset.paywho){payWho=t.dataset.paywho;render();return}
   if(t.dataset.stu){const i=+t.dataset.stu;selStudent=i<0?null:i;render();return}
   if(t.dataset.ac){selAc=t.dataset.ac;render();return}
@@ -1519,6 +1776,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{
   const el=e.target;
+  if(el.id==="periodSel"){PERIOD=PERIODS[+el.value]||PERIODS[0];render();return}
   if(NB&&["nbAc","nbWho","nbStu","nbS","nbE"].includes(el.id)){const k={nbAc:"ac",nbWho:"who",nbStu:"stu",nbS:"s",nbE:"e"}[el.id];NB[k]=k==="s"||k==="e"?+el.value:el.value;
     if(k==="s"&&NB.e<=NB.s)NB.e=Math.min(TL1,NB.s+NB_LEN[NB.type]);
     if(k==="stu"&&!NB.code){const st=STUDENTS.find(x=>x.name===el.value);if(st)NB.code=nextCode(st,NB.type==="ground")}

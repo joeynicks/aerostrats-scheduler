@@ -34,6 +34,16 @@
   {ac:"N931QA",who:null,s:16.5,e:18,type:"mx",t:"100-hr inspection",st:"up",amt:0,roles:"all"},
   {ac:null,who:"J. Nichols",s:16,e:17,type:"ground",t:"Taylor Brooks \u00b7 G4",st:"up",amt:0}];
   BOOK0.forEach((b,i)=>{if(!b.id)b.id="b"+i});
+  /* real clock: hours since local midnight. Sample bookings get their status from it:
+     finished ones are done (an unclosed tour block stays overdue), running ones are in progress */
+  const NOWH=function(){const d=new Date();return d.getHours()+d.getMinutes()/60};
+  const N0=NOWH();
+  BOOK0.forEach(b=>{if(b.id==="alexF14"||b.id==="pmTour")return; /* these two follow the student app and the tour desk */
+    if(b.e<=N0){b.st=b.st==="overdue"?"overdue":"done";if(b.st==="done"&&!b.amt&&b.type!=="mx")b.amt=Math.round((b.e-b.s)*(b.type==="ground"?60:b.type==="tour"?0:b.ac==="N931QA"?320:240)*100)/100}
+    else if(b.s<=N0){b.st="live"}
+    else if(b.st!=="attn")b.st="up"});
+  /* most recent hourly METAR: issued at :35 past the hour */
+  const lastObs=function(){const d=new Date();if(d.getMinutes()<35)d.setHours(d.getHours()-1);d.setMinutes(35,0,0);return d};
   /* weather: sample METARs for the demo and the standard flight category rules */
   const WX_SAMPLES=[ // demo only; live data comes from the KCMD METAR
     {time:"10:35",wind:"210\u00b0 12G18 kt",vis:10,cov:"BKN",ceil:4500,temp:18,da:1450,raw:"KCMD {DD}1635Z AUTO 21012G18KT 10SM BKN045 18/09 A3002 RMK AO2"},
@@ -44,9 +54,19 @@
     if(c<500||v<1)return "LIFR";if(c<1000||v<3)return "IFR";if(c<=3000||v<=5)return "MVFR";return "VFR"}
   const WX_WHY={VFR:"Ceiling above 3,000 ft and visibility above 5 SM",MVFR:"Ceiling 1,000\u20133,000 ft or visibility 3\u20135 SM",IFR:"Ceiling 500\u2013999 ft or visibility 1 to less than 3 SM",LIFR:"Ceiling below 500 ft or visibility below 1 SM"};
   
+  /* Private Pilot Helicopter, Part 61 (Robinson Flight Training Guide): [code,title,dual,solo,ground,note,discussion] */
+  const SYL=[
+ {name:"Stage 1: Pre-solo",items:[["F1","Introduction, preflight and SFAR 73 awareness training",1,0,0,"SFAR 73",0.5],["G1","Helicopter components, systems and instruments",0,0,2],["F2","Flight control proficiency",1,0,0,"",0.5],["F3","Basic maneuvers and the airport environment",1,0,0,"",0.5],["G2","Basic aerodynamics: principles of helicopter flight",0,0,2],["F4","Crosswind effects on maneuvers",1,0,0,"",0.5],["F5","Hovering practice",1,0,0,"",0.5],["G3","Principles of helicopter flight, continued",0,0,2],["F6","Basic maneuver practice",1,0,0,"",0.5],["F7","Introduction to max performance takeoffs and steep approaches",1,0,0,"",0.5],["G4","Aerodynamics of turns, loads and autorotative descents",0,0,2],["F8","Takeoffs, approaches and hovering",1,0,0,"",0.5],["F9","Work on areas of weakness",1,0,0,"",0.5],["G5","Flight manual and helicopter performance",0,0,2],["F10","Introduction to autorotations",1,0,0,"",0.5],["F11","Systems and equipment malfunctions",1,0,0,"",0.5],["G6","Weight and balance",0,0,2],["F12","Autorotations and low rotor RPM recovery",1,0,0,"",0.5],["F13","Pre-solo maneuver review",1.5,0,0,"",0.5],["F14","180-degree autorotations",1.5,0,0,"",0.5],["G7","Stage 1 review and written exam",0,0,1,"Stage exam"],["F15","Takeoffs, approaches and autorotations",1.5,0,0,"",0.5],["F16","Pre-solo review and RHC safety checkout",1.5,0,0,"Safety checkout",0.5],["F17","Stage 1 flight check",1,0,0,"Stage check",1],["F18","First supervised solo",1,0.5,0,"Solo endorsement",1]]},
+ {name:"Stage 2: Solo, off-airport and night",items:[["F19","Second supervised solo",0.5,0.5,0,"",0.5],["G8","Weather elements I",0,0,2],["F20","Third supervised solo",0.5,0.5,0,"",0.5],["F21","Solo practice",0,1,0,"",0.5],["G9","Weather elements II",0,0,2],["F22","Confined area operations",1.5,0,0,"",1],["F23","Shallow approach and running landing",1,0,0,"",0.5],["G10","Weather reports and forecasts",0,0,2],["F24","Solo practice",0,1,0,"",0.5],["F25","Confined areas and running landings review",1.5,0,0,"",0.5],["G11","Flight computer and navigation computations",0,0,2],["F26","Night familiarization",1.5,0,0,"Night",0.5],["G12","Aeronautical Information Manual and pilot information",0,0,2],["F27","Solo practice",0,1.5,0,"",0.5],["G13","Airport and heliport operations and services",0,0,2],["F28","Stage 2 review",1,0,0,"",1],["G14","Stage 2 review and written exam",0,0,1,"Stage exam"],["F29","Stage 2 flight check",1.5,0,0,"Stage check",1.5]]},
+ {name:"Stage 3: Cross-country and checkride prep",items:[["G15","VFR charts and the navigation plotter",0,0,2],["F30","Cross-country introduction",1.5,0,0,"XC",1],["G16","Radio navigation",0,0,2],["F31","Cross-country with emergency procedures",2,0,0,"XC",1],["G17","Cross-country flight planning",0,0,2],["F32","Night cross-country, over 50 nm",1.5,0,0,"Night, XC",1],["F33","First solo cross-country",0,1,0,"Solo XC endorsement",1],["F34","Solo cross-country",0,1.5,0,"Solo XC",1],["G18","Regulations for the private pilot",0,0,2],["F35","Dual cross-country, three airports",2,0,0,"XC",1],["F36","Long solo cross-country: 100 nm, 3 airports",0,2.5,0,"Solo XC",1.5],["G19","Stage 3 review and final written exam",0,0,1,"Stage exam"],["F37","Proficiency review",1,0,0,"",0.5],["F38","Practical test preparation",1.5,0,0,"",1],["F39","Stage 3 and final flight check",1.5,0,0,"Final check",1.5]]}
+];
   const DEMO={
-    ROLES,PILOT_ROLES,BOOK0,WX_SAMPLES,wxCat,WX_WHY,
-    wx(){const w=WX_SAMPLES[DEMO.get("wxSample",0)%WX_SAMPLES.length],dd=String(new Date().getDate()).padStart(2,"0") /* sample report is from 10:35 local this morning */;return Object.assign({cat:wxCat(w)},w,{raw:w.raw.replace("{DD}",dd)})},
+    ROLES,PILOT_ROLES,BOOK0,WX_SAMPLES,wxCat,WX_WHY,SYL,
+    now:NOWH,
+    nowLabel(){const d=new Date();return d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})},
+    wx(){const w=WX_SAMPLES[DEMO.get("wxSample",0)%WX_SAMPLES.length],o=lastObs(),p2=n=>String(n).padStart(2,"0"),
+      z=p2(o.getUTCDate())+p2(o.getUTCHours())+p2(o.getUTCMinutes())+"Z";
+      return Object.assign({cat:wxCat(w)},w,{time:o.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}),raw:w.raw.replace(/\{DD\}\d{4}Z/,z)})},
     /* today's schedule as everyone currently sees it: base + saved changes + bookings made in the demo */
     dayBook(){const bs=DEMO.get("bookState",{}),L=BOOK0.map(b=>Object.assign({},b,bs[b.id]||{}));
       DEMO.get("newBookings",[]).forEach(b=>{if(!L.some(x=>x.id===b.id))L.push(Object.assign({},b,bs[b.id]||{}))});return L},

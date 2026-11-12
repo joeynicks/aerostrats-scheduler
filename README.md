@@ -2,7 +2,7 @@
 
 Helicopter-first flight scheduling for AS&S (Cullman). Replaces FlightCircle.
 
-**Status:** clickable demo. All data is saved in the browser you're using only, so nothing is shared between devices yet.
+**Status:** working test build. Every screen and button works and saves, using the real clock. Data is saved in the browser you're using only, so it isn't shared between devices until the database is connected.
 
 ## Pages
 - `index.html`: main console (Owner, Pilot, Operations)

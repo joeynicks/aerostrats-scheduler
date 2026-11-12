@@ -550,7 +550,7 @@ function viewHome(){
 }
 
 /* ---------- SCHEDULE: whole day for aircraft and instructors; only your own bookings show details ---------- */
-const DEMO_NOW=10+40/60; // same demo clock as the owner console
+const DEMO_NOW=D.now?D.now():10+40/60; // real clock, same as the owner console
 let STL_X=null;
 const ME_NAME="J. Snuffy";
 const TL_INSTR=()=>{const R=D.pilotRoles?D.pilotRoles():{"J. Nichols":{instructor:true},"M. Houston":{instructor:true}};return Object.keys(R).filter(n=>R[n].instructor)};
