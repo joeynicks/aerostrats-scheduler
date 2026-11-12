@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<script>if(/[?&]embed=1/.test(location.search)&&window.parent!==window)document.documentElement.classList.add("embed");</script>
+<title>AS&amp;S Scheduler Demo · Tour Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: block status bar on top; check-in form left, load list right on a tablet; stacked on a phone. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --sunk:#f6f8fa; --ink:#122131; --muted:#5b6b7c; --line:#d8dfe6;
+  --accent:#0f8a7e; --accent-ink:#ffffff; --accent-soft:#dff2ef; --blue:#1d5ea8; --blue-soft:#e3edf8;
+  --ok:#1f7a4a; --ok-soft:#e2f2e9; --warn:#a56200; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe5e3; --bar:#0f1d2b;
+  --display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:var(--body); /* numbers use the regular font with evenly spaced digits */ --code:"IBM Plex Mono",ui-monospace,Menlo,monospace; /* METAR only */
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1219; --surface:#16212c; --sunk:#111a23; --ink:#e6edf3; --muted:#93a3b3; --line:#283645;
+  --accent:#3fc2b3; --accent-ink:#04201d; --accent-soft:#143430; --blue:#5fa2ec; --blue-soft:#1a3049;
+  --ok:#5cc58b; --ok-soft:#173326; --warn:#f0b357; --warn-soft:#3a2a10; --bad:#f2847b; --bad-soft:#3d1a18; --bar:#070d13; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1219; --surface:#16212c; --sunk:#111a23; --ink:#e6edf3; --muted:#93a3b3; --line:#283645;
+  --accent:#3fc2b3; --accent-ink:#04201d; --accent-soft:#143430; --blue:#5fa2ec; --blue-soft:#1a3049;
+  --ok:#5cc58b; --ok-soft:#173326; --warn:#f0b357; --warn-soft:#3a2a10; --bad:#f2847b; --bad-soft:#3d1a18; --bar:#070d13; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bar);color:#dbe4ec}
+.top-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;padding-block:12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.backlnk{display:inline-flex;align-items:center;gap:4px;color:#dbe4ec;text-decoration:none;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:5px 12px 5px 8px;white-space:nowrap}
+.backlnk:hover{background:rgba(255,255,255,.08);color:#fff}
+.backlnk svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.brand{font-family:var(--display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;font-size:17px}
+.brand span{color:#6ce0d2}
+/* ---------- inside the console (Tours page): same look as the console, no separate header ---------- */
+html.embed{--accent:#1d5ea8;--accent-ink:#ffffff;--accent-soft:#e3edf8;background:transparent}
+@media (prefers-color-scheme:dark){html.embed:not([data-theme="light"]){--accent:#5fa2ec;--accent-ink:#06121f;--accent-soft:#1a3049}}
+html.embed body{background:transparent;overflow:hidden}
+html.embed body::before{display:none}
+html.embed .top{position:static;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px}
+html.embed .top-in{max-width:none;padding:12px 16px}
+html.embed .brand,html.embed .backlnk{display:none}
+html.embed .blk b{color:var(--ink)} html.embed .blk .k{color:var(--muted)}
+html.embed .stat.ok{background:var(--ok-soft);color:var(--ok)} html.embed .stat.wait{background:var(--warn-soft);color:var(--warn)} html.embed .stat.done{background:var(--sunk);color:var(--muted)}
+html.embed .who{color:var(--muted)}
+html.embed .btn.dark{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+html.embed .btn.ghostd{background:var(--surface);border-color:var(--line);color:var(--ink)}
+html.embed .wrap{max-width:none;padding:14px 0 6px}
+html.embed .scrim{position:absolute;inset:auto 0 auto 0;top:var(--vt,0px);height:var(--vh,100vh)}
+
+.blk{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;align-items:center}
+.blk b{color:#fff;font-weight:600}
+.blk .k{color:#8fa3b6;margin-right:4px}
+.top .act{margin-left:auto;display:flex;gap:8px}
+.stat{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px}
+.stat::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.stat.ok{background:rgba(92,197,139,.18);color:#7fe0a8} .stat.wait{background:rgba(240,179,87,.18);color:#f3c37a} .stat.done{background:rgba(255,255,255,.12);color:#c9d5e1}
+
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start;padding-block:18px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+h1,h2{font-family:var(--display);font-weight:600;margin:0}
+h1{font-size:24px}
+h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.step{display:flex;flex-direction:column;gap:10px}
+.step-h{display:flex;align-items:center;gap:10px}
+.num{width:24px;height:24px;border-radius:50%;background:var(--sunk);border:1px solid var(--line);display:grid;place-items:center;font:600 12px var(--mono);flex:none}
+.step.on .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.step.ok .num{background:var(--ok);border-color:var(--ok);color:#fff}
+
+.tours{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
+.tour{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:14px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:86px}
+.tour b{font-family:var(--display);font-size:19px;line-height:1.1}
+.tour span{font-size:13px;color:var(--muted)}
+.tour .p{font:600 17px var(--mono);color:var(--ink);margin-top:auto}
+.tour[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+
+.pax{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:28px minmax(0,1fr) 110px 36px;gap:8px;align-items:center}
+.prow .n{font:600 13px var(--mono);color:var(--muted);text-align:center}
+.prow input{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0}
+.prow input.w{font-family:var(--mono);text-align:right}
+.prow .x{width:36px;height:40px;border-radius:10px;color:var(--muted);font-size:20px}
+.prow .x:hover{background:var(--sunk)}
+.addp{align-self:flex-start;color:var(--blue);font-weight:600;padding:4px 0}
+.addp:disabled{color:var(--muted);cursor:not-allowed}
+
+.wb{border-radius:12px;padding:12px 14px;border:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;background:var(--sunk)}
+.wb.ok{border-color:var(--ok)} .wb.bad{border-color:var(--bad);background:var(--bad-soft)}
+.seats{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:13px}
+.seat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.seat span:first-child{color:var(--muted);white-space:nowrap}
+.seat span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.info{background:var(--blue-soft);color:var(--blue)}
+
+.waivers{display:flex;flex-direction:column;gap:10px}
+.wv{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.wv.done{border-color:var(--ok)}
+.wv-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wv-h .minor{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.wv-h .minor input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.gname{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0}
+.wv{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wvchk{display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
+.wvchk input{width:24px;height:24px;margin:0;accent-color:var(--ok);flex:none}
+.wvchk > span{display:flex;flex-direction:column}
+.wvchk .muted{font-size:13px}
+.wv .minor{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.wv .minor input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 16px;font-weight:600;min-height:48px;border:1px solid var(--line);background:var(--surface)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dark{background:#fff;color:var(--bar);border-color:#fff}
+.btn.ghostd{background:transparent;border-color:rgba(255,255,255,.3);color:#fff}
+.btn.small{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.payrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+.total{font:600 26px var(--mono)}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:500}
+
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sum div{background:var(--sunk);border-radius:10px;padding:8px 10px}
+.sum .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.sum .v{font:600 18px var(--mono)}
+@media (max-width:520px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.loads{display:flex;flex-direction:column;gap:10px}
+.load{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.load .ln{font:600 15px var(--mono);width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--sunk);grid-row:span 2}
+.load .lt{font-weight:600}
+.load .lm{font-size:13px;color:var(--muted);grid-column:2/-1}
+.load.next{border:2px solid var(--accent);background:var(--accent-soft)}
+.load.next .ln{background:var(--accent);color:var(--accent-ink)}
+.load.flown{opacity:.6}
+.load.flown .ln{background:var(--ok-soft);color:var(--ok)}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-size:14px}
+
+.scrim{position:fixed;inset:0;background:rgba(5,12,18,.5);display:grid;place-items:center;z-index:20;padding:16px}
+.modal{position:relative;background:var(--surface);border-radius:18px;padding:20px;width:min(460px,100%);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.xclose{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:15px;display:grid;place-items:center;z-index:2}
+.xclose:hover{color:var(--ink)}
+.modal>h1:first-of-type{padding-right:44px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.fld input{font:16px var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pre{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0;display:flex;flex-direction:column;align-items:center}
+.pre b{font-family:var(--display);font-size:17px} .pre span{font-size:11px;color:var(--muted)}
+.pre[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pre[aria-pressed="true"] span{color:inherit}
+.tapping{display:grid;place-items:center;gap:10px;padding:16px 0;text-align:center}
+.ring{width:72px;height:72px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.okmark{width:72px;height:72px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:36px}
+.rdh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.rdout{font-size:12.5px;color:var(--muted)} .rdout b{font:400 13px var(--mono);color:var(--ink)}
+.rddiff{font-size:12px;color:var(--muted);min-height:16px}
+.itemchips{display:flex;flex-wrap:wrap;gap:6px}
+.ichip{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.ichip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.ichip.clr{border-style:dashed;color:var(--muted)}
+.addons{display:flex;flex-direction:column;gap:6px}
+.addon{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+.addon input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.modal.wide{width:min(760px,100%)}
+.cat{display:flex;flex-direction:column;gap:8px}
+.crow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) 96px 128px auto 32px;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px}
+.cat:last-of-type .crow{grid-template-columns:minmax(0,2.7fr) 96px 128px auto 32px}
+.crow input,.crow select{font:inherit;font-size:15px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;min-width:0;width:100%}
+.cprice{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.crow .tog{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.crow .tog input{width:18px;height:18px;accent-color:var(--accent)}
+.crow .x{width:32px;height:36px;border-radius:8px;color:var(--muted);font-size:20px}
+.crow.off{opacity:.55}
+@media (max-width:640px){.crow,.cat:last-of-type .crow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.crow input[data-k="n"],.crow input[data-k="d"]{grid-column:1/-1}}
+.who{font-size:13px;color:#c9d5e1;align-self:center;margin-right:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:12px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+
+body{font-variant-numeric:tabular-nums}
+</style>
+
+</head><body>
+<header class="top"><div class="top-in" id="top"></div></header>
+<div class="wrap">
+  <section class="panel" id="form" aria-label="Group check-in"></section>
+  <section class="panel" id="list" aria-label="Load list"></section>
+</div>
+<div id="modal"></div>
+
+<script src="demo.js"></script>
+<script>
+(function(){
+const D=window.DEMO||{get:(k,d)=>d,set(){},role:()=>"owner",bar(){}};
+let ROLE=D.role(); if(ROLE==="student"){ROLE="desk";D.set("role","desk")}
+const EMBED=document.documentElement.classList.contains("embed");
+if(!EMBED)D.bar();
+/* inside the console: size the frame to the content and keep pop-ups in the visible part of the screen */
+function fitFrame(){if(!EMBED)return;try{const f=window.frameElement;if(f)f.style.height=document.documentElement.scrollHeight+"px"}catch(e){}}
+function placeModal(){if(!EMBED)return;try{const f=window.frameElement,r=f.getBoundingClientRect(),vh=window.parent.innerHeight,top=Math.max(0,-r.top),bot=Math.min(r.height,vh-r.top);
+  document.documentElement.style.setProperty("--vt",top+"px");document.documentElement.style.setProperty("--vh",Math.max(240,bot-top)+"px")}catch(e){}}
+if(EMBED){try{new ResizeObserver(fitFrame).observe(document.body);window.parent.addEventListener("scroll",placeModal,{passive:true});window.parent.addEventListener("resize",()=>{placeModal();fitFrame()})}catch(e){}}
+const ME_T={owner:"J. Nichols",instructor:"M. Houston",desk:"G. Nichols"}[ROLE];
+const NO_TOUR=ROLE==="instructor"&&!D.hasRole(ME_T,"tour"); // pilot without the Tour role
+const CAN_FLY=ROLE==="owner"||(ROLE==="instructor"&&!NO_TOUR), CAN_CATALOG=ROLE==="owner";
+const CAN_CLOSE=CAN_FLY||ROLE==="desk"; // Operations can close a block when the pilot can't; dispatch stays with the pilot // pilots with the Tour role dispatch and close tour blocks
+const WHO={owner:"J. Nichols · Owner",instructor:"M. Houston · Pilot",desk:"G. Nichols · Operations"}[ROLE];
+const $=s=>document.getElementById(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>"$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const nowT=()=>new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+
+let TOURS=[{id:"ud",n:"Up n' Down",d:"Quick hover and climb",p:10,unit:"person",on:true},{id:"atp",n:"Around the Pattern",d:"Lap of the airport",p:30,unit:"person",on:true},{id:"rtc",n:"Run to Cullman",d:"Out over town and back",p:60,unit:"person",on:true}];
+let ADDONS=[{id:"photo",n:"Photo package",p:15,unit:"group",on:true}];
+let uid=100;
+const unitLbl=u=>u==="person"?"/person":u==="group"?"/group":"/flight";
+const tourById=id=>TOURS.find(t=>t.id===id);
+function priceFor(tour,nPax,addons){
+  if(!tour)return {lines:[],total:0};
+  const lines=[[tour.n+(tour.unit==="person"?` · ${nPax} × $${tour.p}`:" · per flight"),tour.unit==="person"?tour.p*nPax:tour.p]];
+  (addons||[]).forEach(id=>{const a=ADDONS.find(x=>x.id===id);if(a)lines.push([a.n+(a.unit==="person"?` · ${nPax} × $${a.p}`:""),a.unit==="person"?a.p*nPax:a.p])});
+  return {lines,total:lines.reduce((t,l)=>t+l[1],0)};
+}
+/* tour + add-ons + items for sale (shared list from the owner console; tax only on taxable items) */
+function fullPrice(f,tour,nPax){const pr=priceFor(tour,nPax,f.addons),it=D.cartTotals(f.items||{});
+  return {lines:pr.lines.concat(it.lines.map(([n,q,a])=>[n+(q>1?" × "+q:""),a]),it.tax?[["Sales tax",it.tax]]:[]),total:Math.round((pr.total+it.total)*100)/100,it}}
+// R44 Raven I N931QA — POH limits and empty weight from the Robinson Weight & Balance app
+const M={maxGross:2400,minGross:1550,seatMax:300,
+  main:{usable:29.5,arm:106.0,lat:-13.5},aux:{usable:17.0,arm:102.0,lat:13.0},
+  auxTable:[[7,0],[8,0.8],[9,1.5],[10,2.3],[11,3],[12,3.8],[13,4.5],[14,5.3],[15,6],[16,6.8],[17,7.6],[18,8.3],[19,9.1],[20,9.8],[21,10.6],[22,11.3],[23,12.1],[24,12.8],[25,13.6],[26,14.4],[27,15.1],[28,15.9],[29,16.7],[29.5,17]],
+  seats:{FR:{n:"Front right (PIC)",arm:49.5,lat:12.2},FL:{n:"Front left",arm:49.5,lat:-10.4},AR:{n:"Aft right",arm:79.5,lat:12.2},AL:{n:"Aft left",arm:79.5,lat:-12.2}},
+  envLong:[[92.0,1550],[92.0,2200],[93.0,2400],[98.0,2400],[102.5,2000],[102.5,1550]],
+  envLat:[[92.0,-3.0],[92.0,3.0],[100.0,3.0],[102.5,1.5],[102.5,-1.5],[100.0,-3.0]]};
+const AC={tail:"N931QA",model:"R44 Raven I",bew:1463.2,arm:154590.2/1463.2,lat:-164.9/1463.2,hobbs:1688.9,tach:1601.7};
+function auxFromMain(g){const t=M.auxTable;if(g<=t[0][0])return 0;for(let i=1;i<t.length;i++){if(g<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(g-x0)*(y1-y0)/(x1-x0)}}return M.aux.usable}
+function mainForTotal(T){let lo=0,hi=M.main.usable;for(let i=0;i<40;i++){const m=(lo+hi)/2;(m+auxFromMain(m)<T)?lo=m:hi=m}return hi}
+function rangeAt(poly,v,axis){const o=1-axis,h=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length];if(p[axis]===q[axis]){if(Math.abs(p[axis]-v)<1e-9)h.push(p[o],q[o]);continue}if((p[axis]-v)*(q[axis]-v)<=0)h.push(p[o]+(v-p[axis])*(q[o]-p[o])/(q[axis]-p[axis]))}return h.length?[Math.min(...h),Math.max(...h)]:null}
+const inR=(r,v)=>r&&v>=r[0]-1e-6&&v<=r[1]+1e-6;
+
+const S={
+  block:{pilot:"R. Ellis",pilotWt:185,window:"1:00 – 4:00 PM",status:"pending",out:null,fuel:34.9,hobbsOut:AC.hobbs},
+  loads:[
+    {n:1,tour:"atp",tourName:"Around the Pattern",addons:["Photo package"],pax:[["Dana Whitfield",165],["Mark Whitfield",205],["Ella Whitfield",95]],paid:105,method:"Tap",flown:false},
+    {n:2,tour:"ud",tourName:"Up n' Down",addons:[],pax:[["Luis Ortega",180],["Ana Ortega",140]],paid:20,method:"Tap",flown:false}],
+  form:{tour:null,pax:[["",""]],paper:[false],minor:[false],addons:[],items:{}},
+  modal:null
+};
+
+/* ---------- W&B with best seat assignment ---------- */
+function wbFor(pax){
+  const ppl=pax.filter(p=>p[0]!==""||p[1]!=="").map(p=>[p[0]||"Passenger",parseFloat(p[1])]);
+  if(!ppl.length||ppl.some(p=>!(p[1]>0)))return null;
+  const fuelT=S.block.fuel, mg=mainForTotal(fuelT), ag=auxFromMain(mg);
+  const seatsP=["FL","AR","AL"], perms=[];
+  const permute=(a,k=[])=>{if(!a.length)return perms.push(k);a.forEach((x,i)=>permute(a.slice(0,i).concat(a.slice(i+1)),k.concat([x])))};
+  permute(seatsP.slice(0,3));
+  let best=null;
+  const seen=new Set();
+  perms.forEach(order=>{
+    const asg=ppl.map((p,i)=>[order[i],p]);const key=asg.map(a=>a[0]).join();if(seen.has(key))return;seen.add(key);
+    const rows=[[AC.bew,AC.arm,AC.lat],[S.block.pilotWt,M.seats.FR.arm,M.seats.FR.lat]].concat(asg.map(([s,p])=>[p[1],M.seats[s].arm,M.seats[s].lat]));
+    const sum=r=>{const w=r.reduce((t,x)=>t+x[0],0);return{w,c:r.reduce((t,x)=>t+x[0]*x[1],0)/w,l:r.reduce((t,x)=>t+x[0]*x[2],0)/w}};
+    const zf=sum(rows), to=sum(rows.concat([[mg*6,M.main.arm,M.main.lat],[ag*6,M.aux.arm,M.aux.lat]]));
+    const ok=p=>inR(rangeAt(M.envLong,p.w,1),p.c)&&inR(rangeAt(M.envLat,p.c,0),p.l);
+    const seatOk=asg.every(([s,p])=>p[1]<=M.seatMax);
+    const good=to.w<=M.maxGross&&zf.w>=M.minGross&&ok(to)&&ok(zf)&&seatOk;
+    const score=Math.abs(to.c-97)+Math.abs(to.l)*2;
+    const cand={asg,to,zf,good,score,seatOk};
+    if(!best||(cand.good&&!best.good)||(cand.good===best.good&&cand.score<best.score))best=cand;
+  });
+  best.margin=M.maxGross-best.to.w;
+  best.msg=!best.seatOk?`Max ${M.seatMax} lb per seat`:best.to.w>M.maxGross?`${Math.round(best.to.w-M.maxGross)} lb over max gross`:!best.good?"CG outside the envelope in every seating":`${Math.round(best.margin)} lb under max gross`;
+  return best;
+}
+
+/* ---------- render ---------- */
+function renderTop(){
+  const b=S.block;
+  const st=b.status==="dispatched"?`<span class="stat ok">Dispatched ${b.out}</span>`:b.status==="closed"?`<span class="stat done">Block closed</span>`:`<span class="stat wait">Not dispatched</span>`;
+  $("top").innerHTML=`<a class="backlnk" href="index.html" aria-label="Back to Today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Today</a><span class="brand">AS<span>&amp;</span>S Tours</span>
+    <div class="blk"><span><span class="k">Block</span><b>${b.window}</b></span><span><span class="k">Aircraft</span><b class="mono">${AC.tail}</b> ${AC.model}</span><span><span class="k">Pilot</span><b>${b.pilot}</b></span>${b.status!=="pending"?`<span><span class="k">Fuel out</span><b class="mono">${b.fuel.toFixed(1)} gal</b></span>`:""}${st}</div>
+    <div class="act"><span class="who">${WHO}</span>${b.status==="pending"?(CAN_FLY?`<button class="btn small dark" data-act="dispatch">Dispatch block</button>`:`<span class="who">${b.pilot} dispatches the block</span>`):b.status==="dispatched"&&CAN_CLOSE?`<button class="btn small ghostd" data-act="endblock">Check in block${CAN_FLY?"":" for "+b.pilot}</button>`:""}</div>`;
+}
+function renderForm(){
+  const f=S.form, w=wbFor(f.pax), tour=tourById(f.tour), nPax=f.pax.filter(p=>p[0]||p[1]).length;
+  const pr=fullPrice(f,tour,nPax), total=pr.total, IL=D.items().filter(i=>i.on);
+  const step2ok=w&&w.good, step3ok=waiverOk(f);
+  $("form").innerHTML=`
+    <div class="ph"><h1>Check in a group</h1>${CAN_CATALOG?'<button class="btn small" data-act="catalog">Manage tours &amp; options</button>':'<span class="muted" style="font-size:13px">Up to 3 passengers per load</span>'}</div>
+    <div class="step ${tour?"ok":"on"}"><div class="step-h"><span class="num">${tour?"✓":"1"}</span><h2>Tour</h2></div>
+      <div class="tours">${TOURS.filter(t=>t.on).map(t=>`<button class="tour" data-tour="${t.id}" aria-pressed="${f.tour===t.id}"><b>${esc(t.n)}</b><span>${esc(t.d)}</span><span class="p">$${t.p}<span style="font:400 12px var(--body);color:var(--muted)"> ${unitLbl(t.unit)}</span></span></button>`).join("")||'<div class="empty">No active tours. Add one in Manage tours &amp; options.</div>'}</div></div>
+
+    <div class="step ${step2ok?"ok":tour?"on":""}"><div class="step-h"><span class="num">${step2ok?"✓":"2"}</span><h2>Passengers</h2></div>
+      <div class="pax">${f.pax.map((p,i)=>`<div class="prow"><span class="n">${i+1}</span>
+        <input id="pn${i}" data-pn="${i}" placeholder="Full name" value="${esc(p[0])}" autocomplete="off">
+        <input id="pw${i}" data-pw="${i}" class="w" placeholder="Weight lb" inputmode="numeric" value="${esc(p[1])}">
+        <button class="x" data-rm="${i}" aria-label="Remove passenger ${i+1}" ${f.pax.length===1?"hidden":""}>×</button></div>`).join("")}
+        <button class="addp" data-act="addp" ${f.pax.length>=3?"disabled":""}>+ Add passenger</button></div>
+      <div id="wbOut">${wbBox(w)}</div></div>
+
+    <div class="step ${step3ok?"ok":step2ok?"on":""}"><div class="step-h"><span class="num">${step3ok?"✓":"3"}</span><h2>Paper waivers</h2></div>
+      <p class="muted" style="margin:0;font-size:13.5px">Hand each passenger a waiver form. Tick each one when it's signed and in the waiver box. A parent or guardian signs for anyone under 18.</p>
+      <div class="waivers">${f.pax.map((p,i)=>`<div class="wv ${f.paper[i]?"done":""}">
+        <label class="wvchk"><input type="checkbox" data-paper="${i}" ${f.paper[i]?"checked":""}><span><b>${esc(p[0]||"Passenger "+(i+1))}</b><span class="muted">${f.minor[i]?"Signed by parent or guardian":"Signed by passenger"}</span></span></label>
+        <label class="minor"><input type="checkbox" data-minor="${i}" ${f.minor[i]?"checked":""}> Under 18</label></div>`).join("")}</div></div>
+
+    <div class="step ${step3ok&&step2ok&&tour?"on":""}"><div class="step-h"><span class="num">4</span><h2>Payment</h2></div>
+      ${ADDONS.some(a=>a.on)?`<div class="addons">${ADDONS.filter(a=>a.on).map(a=>`<label class="addon"><input type="checkbox" data-addon="${a.id}" ${f.addons.includes(a.id)?"checked":""}><span>${esc(a.n)}</span><span class="mono">+$${a.p} ${unitLbl(a.unit)}</span></label>`).join("")}</div>`:""}
+      ${IL.length?`<div class="fld" style="margin-top:4px"><span>Add items (optional)</span></div><div class="itemchips">${IL.map(i=>`<button class="ichip ${f.items[i.id]?"on":""}" data-titem="${i.id}">${f.items[i.id]?f.items[i.id]+" × ":"+ "}${esc(i.n)} · ${money(i.p)}</button>`).join("")}${Object.keys(f.items).length?'<button class="ichip clr" data-titemclr>Clear items</button>':""}</div>`:""}
+      <div class="payrow"><div><div class="muted" style="font-size:13px" id="payLines">${tour?pr.lines.map(l=>esc(l[0])).join(" + "):"Pick a tour"}</div><div class="total">${money(total)}</div></div>
+        <button class="btn" data-act="cash" ${tour&&step2ok&&step3ok?"":"disabled"}>Cash</button>
+        <button class="btn primary" data-act="tap" ${tour&&step2ok&&step3ok?"":"disabled"}>Tap to pay</button></div>
+      ${S.block.status==="closed"?`<div class="err">This block is closed. No more groups can be checked in.</div>`:""}</div>`;
+}
+function wbBox(w){
+  if(!w)return `<div class="wb"><span class="muted">Enter each passenger's weight to check weight and balance.</span></div>`;
+  const map={FR:[S.block.pilot,S.block.pilotWt]};w.asg.forEach(([s,p])=>map[s]=p);
+  return `<div class="wb ${w.good?"ok":"bad"}"><div><span class="mono" style="font-size:18px;font-weight:600">${Math.round(w.to.w)}</span> <span class="muted">of ${M.maxGross} lb · ${w.msg}</span></div>
+    <span class="pill ${w.good?"ok":"bad"}">${w.good?"In limits":"Out of limits"}</span>
+    <div class="seats">${["FR","FL","AR","AL"].map(s=>`<div class="seat"><span>${M.seats[s].n}</span><span>${map[s]?esc(map[s][0])+" · "+map[s][1]:"Empty"}</span></div>`).join("")}</div></div>`;
+}
+function renderList(){
+  const L=S.loads, flown=L.filter(l=>l.flown), wait=L.filter(l=>!l.flown);
+  const pax=L.reduce((t,l)=>t+l.pax.length,0), rev=L.reduce((t,l)=>t+l.paid,0);
+  $("list").innerHTML=`
+    <div class="ph"><h1>Load list</h1><span class="muted" style="font-size:13px">Fly in this order</span></div>
+    <div class="sum"><div><div class="k">Flown</div><div class="v">${flown.length}</div></div><div><div class="k">Waiting</div><div class="v">${wait.length}</div></div><div><div class="k">Passengers</div><div class="v">${pax}</div></div><div><div class="k">Collected</div><div class="v">${money(rev)}</div></div></div>
+    <div class="loads">${L.length?[...wait,...flown.slice().sort((x,y)=>(y.ft||0)-(x.ft||0))].map(l=>{const t=tourById(l.tour)||{n:l.tourName},isNext=!l.flown&&l===wait[0],w=wbFor(l.pax.map(p=>[p[0],String(p[1])]));const map={};if(w)w.asg.forEach(([s,p])=>map[s]=p[0]);return `
+      <div class="load ${l.flown?"flown":isNext?"next":""}"><span class="ln">${l.flown?"✓":l.n}</span>
+        <div><div>${isNext?'<span class="tag">Next up · </span>':""}<span class="lt">${esc(l.tourName||t.n)}</span>${l.addons&&l.addons.length?` <span class="pill info" style="font-size:11px">+ ${esc(l.addons.join(", "))}</span>`:""}</div></div>
+        ${l.flown?`<span class="pill ok">Flown ${l.at}</span>`:`<button class="btn small ${isNext?"primary":""}" data-flown="${l.n}" ${S.block.status!=="dispatched"?"disabled":""}>Flown</button>`}
+        <div class="lm">${l.pax.map(p=>esc(p[0])).join(", ")} · ${l.pax.length} pax · ${l.pax.length}/${l.pax.length} paper waivers · ${money(l.paid)} ${l.method.toLowerCase()}</div>
+        ${isNext&&w?`<div class="lm">Seats: front left ${esc(map.FL||"empty")}, aft right ${esc(map.AR||"empty")}, aft left ${esc(map.AL||"empty")} · ${Math.round(w.to.w)} lb</div>`:""}
+      </div>`}).join(""):`<div class="empty">No groups yet. Check one in on the left.</div>`}</div>
+    ${S.block.status==="pending"?`<p class="muted" style="font-size:13px;margin:0">Groups can check in now. Loads can be marked flown once the block is dispatched.</p>`:""}`;
+}
+function render(){
+  if(NO_TOUR){renderTop();$("form").innerHTML=`<div class="ph"><h1>Tour role needed</h1></div><p class="muted">Your pilot account doesn't have the Tour role, so the tour desk is closed to you. The owner can turn it on in Staff &amp; permissions.</p>`;$("list").innerHTML="";document.querySelectorAll('[data-act="dispatch"]').forEach(b=>b.remove());return}
+  const cx=(D.get("bookState",{}).pmTour||{});
+  if(cx.st==="cancelled"){renderTop();$("form").innerHTML=`<div class="ph"><h1>Block cancelled</h1></div><p class="muted">The 1:00 PM tour block was cancelled${cx.cxBy?" by "+esc(cx.cxBy):""}${cx.cxReason?" (" +esc(cx.cxReason.toLowerCase())+")":""}. No groups can be checked in.</p>`;renderList();renderModal();
+    document.querySelectorAll('[data-act="dispatch"]').forEach(b=>b.remove());return}
+  renderTop();renderForm();renderList();renderModal()}
+
+/* ---------- signatures (one pad per passenger) ---------- */
+function waiverOk(f){const act=f.pax.map((p,i)=>i).filter(i=>f.pax[i][0]||f.pax[i][1]);return act.length>0&&act.every(i=>f.paper[i])}
+function renderFormKeepSig(){const a=document.activeElement&&document.activeElement.id;renderForm();renderList();if(a&&$(a))$(a).focus()}
+
+/* ---------- modals ---------- */
+function renderModal(){
+  const m=S.modal;if(!m){$("modal").innerHTML="";return}
+  let body="";
+  if(m.type==="pay"){
+    body=m.stage==="wait"?`<div class="tapping"><div class="ring"></div><b>Present card or phone</b><span class="muted">${money(m.total)} · tap, insert or swipe on the reader</span></div><button class="btn" data-act="closem">Cancel</button>`
+      :`<div class="tapping"><div class="okmark">✓</div><b>${m.method==="Cash"?"Cash recorded":"Approved"} · ${money(m.total)}</b><span class="muted">Added to the list as load ${m.n}. Receipt sent if an email or phone was given.</span></div><button class="btn primary" data-act="closem">Next group</button>`;
+  }
+  if(m.type==="dispatch"){
+    const full=M.main.usable+M.aux.usable;
+    body=`<h1>Dispatch tour block</h1><p class="muted" style="margin:0">${AC.tail} · ${S.block.pilot} · ${S.block.window}</p>
+      <div class="fields"><div class="fld">Hobbs out<span class="mono" style="font-size:18px;color:var(--ink)">${AC.hobbs.toFixed(1)}</span></div><div class="fld">Tach out<span class="mono" style="font-size:18px;color:var(--ink)">${AC.tach.toFixed(1)}</span></div></div>
+      <div class="fld">Fuel on board (total)</div>
+      <div class="presets">${[["Full",1],["3/4",.75],["1/2",.5],["1/4",.25]].map(([l,k])=>{const v=+(full*k).toFixed(1);return `<button class="pre" data-fuelpre="${v}" aria-pressed="${Math.abs(m.fuel-v)<.05}"><b>${l}</b><span>${v} gal</span></button>`}).join("")}</div>
+      <label class="check"><input type="checkbox" id="dmx"> Maintenance status reviewed after the aircraft's last check-in</label>
+      <label class="check"><input type="checkbox" id="dfrat"> Block FRAT complete (low or approved)</label>
+      <label class="check"><input type="checkbox" id="dbrief"> Ground handler on duty for loading</label>
+      <div id="derr" class="err" hidden></div>
+      <button class="btn primary" data-act="godispatch">Dispatch</button><button class="btn" data-act="closem">Cancel</button>`;
+  }
+  if(m.type==="end"){
+    const L=S.loads, pax=L.reduce((t,l)=>t+l.pax.length,0), rev=L.reduce((t,l)=>t+l.paid,0), left=L.filter(l=>!l.flown).length;
+    body=`<h1>Check in block</h1>${CAN_FLY?"":`<p style="margin:0">Closing for ${S.block.pilot}. Read the Hobbs and tach on the aircraft, or use the readings ${S.block.pilot} gives you. Your name goes on the close-out.</p>`}<p class="muted" style="margin:0">${L.filter(l=>l.flown).length} loads flown · ${pax} passengers · ${money(rev)}</p>
+      ${left?`<div class="err">${left} load${left>1?"s are":" is"} still waiting. Fly or refund ${left>1?"them":"it"} before closing the block.</div>`:""}
+      <div class="fields"><label class="fld"><span class="rdh">Hobbs in<span class="rdout">Out <b>${S.block.hobbsOut.toFixed(1)}</b></span></span><input id="hin" inputmode="decimal" placeholder="Read gauge"><span class="rddiff" id="hdiff">&nbsp;</span></label><label class="fld"><span class="rdh">Tach in<span class="rdout">Out <b>${AC.tach.toFixed(1)}</b></span></span><input id="tin" inputmode="decimal" placeholder="Read gauge"><span class="rddiff" id="tdiff">&nbsp;</span></label></div>
+      <div id="eerr" class="err" hidden></div>
+      <button class="btn primary" data-act="goend" ${left?"disabled":""}>Close block</button><button class="btn" data-act="closem">Cancel</button>`;
+  }
+  if(m.type==="catalog"){
+    const row=(x,kind,i)=>`<div class="crow ${x.on?"":"off"}">
+      <input id="${kind}n${i}" data-cat="${kind}" data-i="${i}" data-k="n" value="${esc(x.n)}" placeholder="Name" aria-label="Name">
+      ${kind==="t"?`<input id="${kind}d${i}" data-cat="${kind}" data-i="${i}" data-k="d" value="${esc(x.d)}" placeholder="Short description" aria-label="Description">`:""}
+      <div class="cprice">$<input id="${kind}p${i}" data-cat="${kind}" data-i="${i}" data-k="p" class="mono" inputmode="decimal" value="${x.p}" aria-label="Price"></div>
+      <select id="${kind}u${i}" data-cat="${kind}" data-i="${i}" data-k="unit" aria-label="Priced per">${(kind==="t"?["person","flight"]:["group","person"]).map(u=>`<option value="${u}" ${x.unit===u?"selected":""}>per ${u}</option>`).join("")}</select>
+      <label class="tog"><input type="checkbox" data-cat="${kind}" data-i="${i}" data-k="on" ${x.on?"checked":""}> Active</label>
+      <button class="x" data-del="${kind}" data-i="${i}" aria-label="Delete ${esc(x.n)}">×</button></div>`;
+    body=`<div class="ph"><h1>Tours &amp; options</h1><span class="muted" style="font-size:13px">Owner only</span></div>
+      <h2>Tours</h2><div class="cat">${TOURS.map((x,i)=>row(x,"t",i)).join("")}</div><button class="addp" data-act="addtour">+ Add tour</button>
+      <h2 style="margin-top:6px">Options</h2><div class="cat">${ADDONS.map((x,i)=>row(x,"a",i)).join("")}</div><button class="addp" data-act="addaddon">+ Add option</button>
+      <p class="muted" style="font-size:13px;margin:0">Inactive tours and options stay on past loads and reports but don't show at check-in. Price a tour per person or per flight (for private charters).</p>
+      <button class="btn primary" data-act="closem">Done</button>`;
+  }
+  if(m.type==="closed"){
+    body=`<div class="tapping"><div class="okmark">✓</div><b>Block closed</b><span class="muted">${m.text}</span></div><button class="btn primary" data-act="closem">Done</button>`;
+  }
+  placeModal();
+  const canX=!(m.type==="pay"&&m.stage==="wait"); // no closing while the card reader is waiting
+  $("modal").innerHTML=`<div class="scrim"><div class="modal ${m.type==="catalog"?"wide":""}" role="dialog" aria-modal="true">${canX?'<button class="xclose" data-act="closem" aria-label="Close">✕</button>':""}${body}</div></div>`;
+}
+let tt;function toast(m){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=m;clearTimeout(tt);tt=setTimeout(()=>t.remove(),2600)}
+
+/* ---------- events ---------- */
+function addLoad(method){
+  const f=S.form,t=tourById(f.tour),pax=f.pax.filter(p=>p[0]||p[1]).map(p=>[p[0]||"Passenger",parseFloat(p[1])]);
+  const n=(S.loads.length?Math.max(...S.loads.map(l=>l.n)):0)+1, fp=fullPrice(f,t,pax.length), total=fp.total;
+  if(fp.it.lines.length)D.recordSale({buyer:(pax[0]&&pax[0][0]!=="Passenger"?pax[0][0]:"Tour guest")+(pax.length>1?` group (${pax.length})`:""),items:fp.it.lines,sub:fp.it.sub,tax:fp.it.tax,total:fp.it.total,method,by:WHO.split(" · ")[0],src:"Tour check-in"});
+  const waivers=f.pax.map((p,i)=>({name:p[0]||"Passenger",minor:f.minor[i],paper:true})).filter((w,i)=>f.pax[i][0]||f.pax[i][1]);
+  S.loads.push({n,waivers,tour:t.id,tourName:t.n,addons:f.addons.map(id=>(ADDONS.find(a=>a.id===id)||{}).n).filter(Boolean),pax,paid:total,method,flown:false});
+  S.form={tour:null,pax:[["",""]],paper:[false],minor:[false],addons:[],items:{}};
+  return {n,total};
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-titem],[data-titemclr],[data-tour],[data-act],[data-rm],[data-flown],[data-fuelpre],[data-del]");if(!t)return;
+  if(t.dataset.del){const L=t.dataset.del==="t"?TOURS:ADDONS;L.splice(+t.dataset.i,1);renderModal();renderForm();return}
+  if(t.dataset.titem){const k=t.dataset.titem;S.form.items[k]=(S.form.items[k]||0)+1;renderFormKeepSig();return}
+  if(t.hasAttribute("data-titemclr")){S.form.items={};renderFormKeepSig();return}
+  if(t.dataset.tour){S.form.tour=t.dataset.tour;renderForm();return}
+  if(t.dataset.rm){const i=+t.dataset.rm;["pax","paper","minor"].forEach(k=>S.form[k].splice(i,1));renderForm();return}
+  if(t.dataset.flown){const l=S.loads.find(x=>x.n===+t.dataset.flown);l.flown=true;l.at=nowT();l.ft=Date.now();renderList();toast("Load "+l.n+" flown");return}
+  if(t.dataset.fuelpre){S.modal.fuel=+t.dataset.fuelpre;renderModal();return}
+  const a=t.dataset.act;
+  if(a==="addp"){S.form.pax.push(["",""]);S.form.paper.push(false);S.form.minor.push(false);renderForm();const i=S.form.pax.length-1;$("pn"+i).focus();return}
+  if(a==="tap"||a==="cash"){
+    if(S.block.status==="closed")return;
+    if(a==="cash"){const r=addLoad("Cash");S.modal={type:"pay",stage:"done",method:"Cash",total:r.total,n:r.n};render();return}
+    const tour=tourById(S.form.tour),n=S.form.pax.filter(p=>p[0]||p[1]).length;
+    S.modal={type:"pay",stage:"wait",total:fullPrice(S.form,tour,n).total};renderModal();
+    setTimeout(()=>{if(!S.modal||S.modal.stage!=="wait")return;const r=addLoad("Tap");S.modal={type:"pay",stage:"done",method:"Tap",total:r.total,n:r.n};render()},1600);return}
+  if(a==="closem"){const wasCat=S.modal&&S.modal.type==="catalog";S.modal=null;renderModal();if(wasCat){if(S.form.tour&&!(tourById(S.form.tour)||{}).on)S.form.tour=null;S.form.addons=S.form.addons.filter(id=>(ADDONS.find(x=>x.id===id)||{}).on);renderForm()}return}
+  if(a==="catalog"){S.modal={type:"catalog"};renderModal();return}
+  if(a==="addtour"){TOURS.push({id:"t"+(++uid),n:"New tour",d:"",p:0,unit:"person",on:true});renderModal();const i=TOURS.length-1;$("tn"+i).focus();$("tn"+i).select();return}
+  if(a==="addaddon"){ADDONS.push({id:"a"+(++uid),n:"New option",p:0,unit:"group",on:true});renderModal();const i=ADDONS.length-1;$("an"+i).focus();$("an"+i).select();return}
+  if(a==="dispatch"){S.modal={type:"dispatch",fuel:34.9};renderModal();return}
+  if(a==="godispatch"){if(!$("dmx").checked||!$("dfrat").checked||!$("dbrief").checked){const d=$("derr");d.textContent="Complete all three checks before dispatching.";d.hidden=false;return}
+    if(!D.get("fratOk",false)){const d=$("derr");d.textContent="This block's FRAT scored high (gusts, back-to-back loads). The owner has to approve it first. In the demo, switch to Owner and approve it under Needs attention.";d.hidden=false;return}
+    S.block.status="dispatched";S.block.out=nowT();S.block.fuel=S.modal.fuel;S.modal=null;render();toast("Block dispatched. Dispatch email sent to the pilot.");return}
+  if(a==="endblock"){S.modal={type:"end"};renderModal();return}
+  if(a==="goend"){const hi=parseFloat($("hin").value),ti=parseFloat($("tin").value),er=$("eerr");
+    if(isNaN(hi)||isNaN(ti)){er.textContent="Enter the Hobbs and tach readings from the gauges.";er.hidden=false;return}
+    if(hi<=S.block.hobbsOut||ti<=AC.tach){er.textContent="Readings must be higher than the readings out.";er.hidden=false;return}
+    const hrs=hi-S.block.hobbsOut,L=S.loads,rev=L.reduce((t,l)=>t+l.paid,0);
+    S.block.status="closed";S.block.hrs=Math.round(hrs*10)/10;S.block.closedAt=nowT();S.block.closedBy=WHO.split(" · ")[0];S.modal={type:"closed",text:`${CAN_FLY?"":"Closed by "+S.block.closedBy+" for "+S.block.pilot+". "}${hrs.toFixed(1)} hr Hobbs · ${L.length} loads · ${L.reduce((t,l)=>t+l.pax.length,0)} passengers · ${money(rev)}. Revenue and ${S.block.pilot}'s pilot time are in the owner console.`};render();return}
+});
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(el.id==="hin"||el.id==="tin"){const out=el.id==="hin"?S.block.hobbsOut:AC.tach,x=parseFloat(el.value),d=$(el.id==="hin"?"hdiff":"tdiff");if(d)d.innerHTML=isNaN(x)?"&nbsp;":x>out?"+"+(x-out).toFixed(1)+" hr":"Must be above "+out.toFixed(1);return}
+  if(el.dataset.pn!=null){S.form.pax[+el.dataset.pn][0]=el.value;$("wbOut").innerHTML=wbBox(wbFor(S.form.pax));refreshPay()}
+  if(el.dataset.pw!=null){S.form.pax[+el.dataset.pw][1]=el.value.replace(/[^0-9.]/g,"");$("wbOut").innerHTML=wbBox(wbFor(S.form.pax));refreshPay()}
+});
+document.addEventListener("change",e=>{const el=e.target;
+  if(el.dataset.paper!=null){S.form.paper[+el.dataset.paper]=el.checked;renderFormKeepSig();return}
+  if(el.dataset.minor!=null){S.form.minor[+el.dataset.minor]=el.checked;renderFormKeepSig();return}
+  if(el.dataset.addon){const id=el.dataset.addon;S.form.addons=el.checked?S.form.addons.concat([id]):S.form.addons.filter(x=>x!==id);refreshPay();return}
+  if(el.dataset.cat){const L=el.dataset.cat==="t"?TOURS:ADDONS,x=L[+el.dataset.i],k=el.dataset.k;
+    if(k==="on")x.on=el.checked;else if(k==="p"){const v=parseFloat(el.value);x.p=isNaN(v)||v<0?0:Math.round(v*100)/100;el.value=x.p}else if(k==="n")x.n=el.value.trim()||x.n;else x[k]=el.value;
+    if(k==="on")el.closest(".crow").classList.toggle("off",!x.on);renderForm();}
+});
+document.addEventListener("focusout",e=>{if(e.target.dataset&&(e.target.dataset.pn!=null||e.target.dataset.pw!=null)){setTimeout(()=>{const a=document.activeElement;if(!a||!(a.dataset&&(a.dataset.pn!=null||a.dataset.pw!=null)))renderFormKeepSig()},0)}});
+function refreshPay(){const f=S.form,tour=tourById(f.tour),n=f.pax.filter(p=>p[0]||p[1]).length,w=wbFor(f.pax),ok=tour&&w&&w.good&&waiverOk(f)&&S.block.status!=="closed";
+  const pr=fullPrice(f,tour,n),tot=document.querySelector(".total"),pl=$("payLines");if(tot)tot.textContent=money(pr.total);if(pl&&tour)pl.textContent=pr.lines.map(l=>l[0]).join(" + ");
+  document.querySelectorAll('[data-act="tap"],[data-act="cash"]').forEach(b=>b.disabled=!ok);}
+function persist(){
+  D.set("tourState",{block:{status:S.block.status,out:S.block.out,fuel:S.block.fuel,hrs:S.block.hrs||0,closedAt:S.block.closedAt||null},loads:S.loads});
+  const L=S.loads;D.set("tour",{status:S.block.status,out:S.block.out,loads:L.length,flown:L.filter(l=>l.flown).length,pax:L.reduce((t,l)=>t+l.pax.length,0),rev:L.reduce((t,l)=>t+l.paid,0),hobbs:S.block.hrs||0});
+}
+(function(){const st=D.get("tourState",null);if(st){Object.assign(S.block,st.block);S.loads=st.loads}})();
+const _rl=renderList;renderList=function(){_rl();persist()};
+render();
+})();
+</script></body></html>

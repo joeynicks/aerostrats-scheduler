@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>AS&amp;S Scheduler Demo · Student</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one phone-width app column, centered on wide screens with a quiet caption above; bottom tab bar, sheets slide up inside the app. */
+:root{
+  --bg:#e9edf1; --app:#f6f8fa; --surface:#ffffff; --ink:#122131; --muted:#5b6b7c; --line:#d8dfe6;
+  --accent:#1d5ea8; --accent-ink:#ffffff; --accent-soft:#e3edf8;
+  --ok:#1f7a4a; --ok-soft:#e2f2e9; --warn:#a56200; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe5e3;
+  --display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:var(--body); /* numbers use the regular font with evenly spaced digits */ --code:"IBM Plex Mono",ui-monospace,Menlo,monospace; /* METAR only */
+  --shadow:0 1px 2px rgba(18,33,49,.06),0 8px 24px rgba(18,33,49,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1219; --app:#111a23; --surface:#18232f; --ink:#e6edf3; --muted:#93a3b3; --line:#2a3846;
+  --accent:#5fa2ec; --accent-ink:#06121f; --accent-soft:#1a3049;
+  --ok:#5cc58b; --ok-soft:#173326; --warn:#f0b357; --warn-soft:#3a2a10; --bad:#f2847b; --bad-soft:#3d1a18;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1219; --app:#111a23; --surface:#18232f; --ink:#e6edf3; --muted:#93a3b3; --line:#2a3846;
+  --accent:#5fa2ec; --accent-ink:#06121f; --accent-soft:#1a3049;
+  --ok:#5cc58b; --ok-soft:#173326; --warn:#f0b357; --warn-soft:#3a2a10; --bad:#f2847b; --bad-soft:#3d1a18;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.caption{max-width:420px;margin:0 auto 12px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.caption b{color:var(--ink);font-weight:600}
+.app{position:relative;max-width:420px;margin:0 auto;background:var(--app);border:1px solid var(--line);border-radius:28px;overflow:hidden;
+  min-height:760px;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+@media (max-width:460px){.app{border-radius:20px;min-height:calc(100vh - 80px)}}
+.top{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 10px}
+.brand{font-family:var(--display);font-weight:700;letter-spacing:.06em;font-size:15px;text-transform:uppercase}
+.brand span{color:var(--accent)}
+.avatar{position:relative;width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:13px}
+.dot-need{position:absolute;top:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:var(--warn);border:2px solid var(--app)}
+.doccard{display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px}
+.doccard b{display:block}
+.doccard span span,.doccard > span:nth-child(2) > span{display:block;font-size:13px;color:var(--muted)}
+.doccard .dc-ic{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.doccard.need{border-color:var(--warn)} .doccard.need .dc-ic{background:var(--warn-soft);color:var(--warn)}
+.doccard.ok .dc-ic{background:var(--ok-soft);color:var(--ok)}
+.doccard .dc-go{font-weight:600;color:var(--accent);font-size:14px}
+.doclist{display:flex;flex-direction:column;gap:8px}
+.docrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px}
+.dr-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dr-t span{font-size:13px;color:var(--muted)}
+.pickrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pick{cursor:pointer}
+.docprev{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
+.docprev img,.docprev .pdf{width:64px;height:64px;border-radius:8px;object-fit:cover;background:var(--app)}
+.docprev .pdf{display:grid;place-items:center;font:600 13px var(--mono);color:var(--bad)}
+.docprev b{display:block;word-break:break-all;font-size:14px}
+main{flex:1;padding:4px 18px 24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h1{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.1;margin:4px 0 0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 0}
+.sub{color:var(--muted);margin:0;font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* next lesson */
+.lesson{display:flex;flex-direction:column;gap:12px}
+.lesson-when{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.lesson-when .day{font-family:var(--display);font-size:28px;font-weight:700;line-height:1}
+.lesson-when .time{font-family:var(--mono);font-size:16px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:0}
+.facts div{min-width:0}
+.facts dt{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-weight:500}
+.objective{background:var(--app);border-radius:10px;padding:10px 12px;font-size:14px}
+.objective b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:2px}
+.mx-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:12px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 16px;font-weight:600;min-height:46px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border:1px solid var(--line);background:var(--surface)}
+.btn.small{min-height:36px;padding:7px 12px;font-size:14px;border-radius:10px}
+.btn.block{width:100%}
+.btn.danger{color:var(--bad);border:1px solid var(--line);background:var(--surface)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat .k{font-size:12px;color:var(--muted)} .stat .v{font-family:var(--display);font-size:22px;font-weight:600}
+.cal{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.cal .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+
+/* book */
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.day-btn{flex:0 0 auto;width:56px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 0;text-align:center}
+.day-btn .dow{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.day-btn .dn{font-family:var(--display);font-size:20px;font-weight:600}
+.day-btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day-btn[aria-pressed="true"] .dow{color:inherit;opacity:.85}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 0;font-family:var(--mono);font-size:15px}
+.slot:hover{border-color:var(--accent)}
+.empty{color:var(--muted);font-size:14px;padding:14px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+.note{font-size:13px;color:var(--muted)}
+
+/* lessons list */
+.list{display:flex;flex-direction:column;gap:10px}
+.li{display:flex;flex-direction:column;gap:8px}
+.li-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.li-title{font-weight:600}
+.li-meta{font-size:13px;color:var(--muted)}
+.li-actions{display:flex;gap:8px;flex-wrap:wrap}
+.notes{font-size:14px;border-left:3px solid var(--line);padding-left:10px;color:var(--ink)}
+.confirm-box{background:var(--bad-soft);border-radius:10px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;gap:8px}
+
+/* progress */
+.meter{height:12px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.ms{display:flex;flex-direction:column;gap:0}
+.ms-i{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ms-i:last-child{border-bottom:0}
+.ms-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line)}
+.ms-i.done .ms-dot{background:var(--ok);border-color:var(--ok)}
+.ms-i.next .ms-dot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ms-i .when{font-size:12px;color:var(--muted)}
+.hours{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+
+/* nav */
+nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:11px;font-weight:500;color:var(--muted);border-radius:10px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{color:var(--accent)}
+
+/* sheet */
+.scrim{position:absolute;inset:0;background:rgba(10,18,26,.45);display:flex;align-items:flex-end;z-index:5}
+.sheet{background:var(--app);width:100%;border-radius:22px 22px 0 0;padding:10px 18px 22px;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 4px}
+.sheet{position:relative}
+/* same close button in the same corner on every panel */
+.xclose{position:absolute;top:10px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:15px;display:grid;place-items:center;z-index:2}
+.xclose:hover{color:var(--ink)}
+.mx{display:flex;flex-direction:column}
+.mx-i{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}
+.mx-i:last-child{border-bottom:0}
+.mx-i .lbl{font-weight:500}
+.mx-i .val{font-size:13px;color:var(--muted);grid-column:1}
+.mx-i .pill{grid-row:1 / span 2;grid-column:2}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.summary div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.summary .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.summary .v{font-family:var(--mono);font-size:17px}
+.toast{position:absolute;left:18px;right:18px;bottom:84px;background:var(--ink);color:var(--app);border-radius:12px;padding:12px 14px;font-size:14px;z-index:6;box-shadow:var(--shadow)}
+.demo{border:1px dashed var(--warn);color:var(--warn);background:var(--warn-soft);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;text-align:left}
+.steps{display:flex;gap:6px;font-size:12px;font-weight:600}
+.steps span{flex:1;text-align:center;padding:6px 4px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.steps .on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps .done{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fields.three{grid-template-columns:repeat(3,1fr)}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.fld input,.fld textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0}
+.fld input.mono{font-family:var(--mono)}
+.fld input:focus,.fld textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex:none}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:500}
+.wb{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;border-radius:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--line)}
+.wb.warn{border-color:var(--warn)} .wb.bad{border-color:var(--bad)}
+.bill{width:100%;border-collapse:collapse;font-size:14px}
+.bill td{padding:8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.bill td:last-child{text-align:right;padding-left:12px;white-space:nowrap}
+.bill .tot td{border-bottom:0;font-weight:600;font-size:16px;padding-top:10px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.opt span{font-size:13px;color:var(--muted)}
+.opt[aria-checked="true"]{border:2px solid var(--accent);padding:11px 13px}
+.opt:disabled{opacity:.5;cursor:not-allowed}
+.paid{align-self:flex-start;font-family:var(--display);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);background:var(--ok-soft);padding:4px 12px;border-radius:8px}
+.linkbtn{align-self:flex-start;color:var(--accent);font-weight:600;font-size:14px;padding:2px 0;text-decoration:underline;text-underline-offset:3px}
+.changed{background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.opt:disabled span{color:var(--bad)}
+.chart{padding:8px}
+.quick{display:flex;gap:6px;height:100%}
+.qbtn.sy{border-color:var(--accent);color:var(--accent)}
+.qbtn{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;font:500 14px var(--mono);min-height:44px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border-radius:9px;padding:9px 0;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.gpill{background:var(--accent-soft);color:var(--accent)}
+.gcard{display:flex;flex-direction:column;gap:6px;padding:12px 16px}
+.prog{display:flex;flex-direction:column;gap:8px}
+.pbar{display:flex;justify-content:space-between;font-size:13px}
+.meter.small{height:8px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stage summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-weight:600;list-style:none}
+.stage summary::-webkit-details-marker{display:none}
+.stage summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:6px;flex:none}
+.stage[open] summary::after{transform:rotate(-135deg)}
+.stage summary span:first-child{flex:1}
+.syl{border-top:1px solid var(--line)}
+.syl-w{border-bottom:1px solid var(--line)}
+.syl-w:last-child{border-bottom:0}
+.syl-w.open{background:var(--app)}
+.syl-i{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:10px 16px;cursor:pointer}
+.syl-i:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.syl-r{display:flex;align-items:center;gap:8px}
+.chev{width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 2px 3px}
+.syl-w.open .chev{transform:rotate(-135deg);margin:3px 2px 0}
+.ldet{padding:2px 16px 14px 66px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+@media (max-width:420px){.ldet{padding-left:16px}}
+.ldet h3{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 0}
+.ldet p{margin:0}
+.ld-time{font-size:12.5px;color:var(--accent);font-weight:600}
+.ld-items,.ld-comp{margin:2px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.ld-items li span{display:block;font-size:12.5px;color:var(--muted)}
+.ld-notes{border-left:3px solid var(--accent);padding-left:10px}
+.syl-i.is-done .syl-t{color:var(--muted)}
+.syl-t{display:flex;flex-direction:column;gap:1px;font-size:14px;min-width:0}
+.code{font:600 12px var(--mono);text-align:center;padding:3px 0;border-radius:6px}
+.code.f{background:var(--accent-soft);color:var(--accent)} .code.g{background:var(--warn-soft);color:var(--warn)}
+.st{font-size:12px;font-weight:600;white-space:nowrap}
+.st.done{color:var(--ok)} .st.sched{color:var(--accent)}
+.times{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcol{display:flex;flex-direction:column;gap:4px;min-width:0}
+.th{font-size:12px;color:var(--muted)}
+.tout{display:flex;align-items:baseline;gap:6px;font-size:13px}
+.tout .mono{font-size:14px;font-weight:400;color:var(--ink)}
+.tout .k{color:var(--muted)}
+.tin .k{display:none}
+.tin{display:flex;flex-direction:column;gap:4px}
+.tin input{font:16px var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0}
+.tin input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.tdiff{font-size:12px;font-weight:600;color:var(--ok);font-family:var(--mono)}
+.tdiff.bad{color:var(--bad)}
+.presets.three{grid-template-columns:repeat(3,1fr)}
+.asinstr{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.fuelsel{display:flex;flex-direction:column;gap:10px}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pre{display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0}
+.pre b{font-family:var(--display);font-size:17px}
+.pre span{font-size:11px;color:var(--muted)}
+.pre[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pre[aria-pressed="true"] span{color:inherit;opacity:.85}
+#fuelR{width:100%;accent-color:var(--accent);height:28px;margin:0}
+.lastin{font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.lastin .k{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.safetybtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px}
+.safetybtn b{color:var(--bad)}
+.safetybtn span{font-size:13px;color:var(--muted)}
+.fld input[type=date]{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.fld select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+.env{width:100%;height:auto;display:block}
+.env .grid{stroke:var(--line);stroke-width:1}
+.env .tick{fill:var(--muted);font:10px var(--mono)}
+.env .axl{fill:var(--muted);font:10px var(--body)}
+.env .envp{fill:var(--ok-soft);stroke:var(--ok);stroke-width:2}
+.env .maxg{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:5 4}
+.env .path{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:3 3}
+.env .to{fill:var(--ok);stroke:var(--surface);stroke-width:2}
+.env .ld{fill:var(--surface);stroke:var(--ok);stroke-width:2.5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%}
+.lg-to{background:var(--ok)} .lg-ld{border:2.5px solid var(--ok);background:var(--surface)}
+.env .zero{stroke:var(--muted);stroke-width:1}
+.env .ptl{fill:var(--ink);font:600 11px var(--body)}
+.env .to.bad{fill:var(--bad)} .env .ld.bad{stroke:var(--bad)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.checks li{display:grid;grid-template-columns:18px 1fr;gap:6px}
+.checks li::before{content:"✓";color:var(--ok);font-weight:700}
+.checks li.bad{color:var(--bad);font-weight:500}
+.checks li.bad::before{content:"✕";color:var(--bad)}
+.lg-env{background:var(--ok-soft);border:2px solid var(--ok);border-radius:3px!important}
+.lg-max{height:0!important;border-top:2px dashed var(--bad);border-radius:0!important;width:16px!important}
+.tbl{overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 12px}
+.wbt{font-size:12.5px;table-layout:auto}
+.wbt td:first-child{white-space:normal}
+.wbt th{text-align:right;font-size:11px;color:var(--muted);font-weight:600;padding:8px 0 6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.wbt th:first-child{text-align:left;padding-left:0}
+.wbt td{text-align:right;padding-left:10px}
+.wbt td:first-child{text-align:left;padding-left:0}
+.mail{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.mail-h{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;display:flex;flex-direction:column;gap:4px}
+.mail-h .k{display:inline-block;width:58px;color:var(--muted)}
+.mail-b{padding:14px;display:flex;flex-direction:column;gap:12px;font-size:14px}
+.mail-b .bill td:first-child{color:var(--muted)}
+.mail-b .tbl{border:0;padding:0}
+.ex{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:2px 8px;border-radius:6px}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}.toast{animation:up .2s ease-out}}
+/* ---------- weather card: standard flight category colors ---------- */
+.wxs{--wxc:#1f8a3b;display:flex;flex-direction:column;gap:6px;border:1px solid color-mix(in srgb,var(--wxc) 35%,var(--line));border-left:5px solid var(--wxc);background:color-mix(in srgb,var(--wxc) 9%,var(--surface));border-radius:12px;padding:10px 12px}
+.wxs.vfr{--wxc:#1f8a3b} .wxs.mvfr{--wxc:#1d5fd6} .wxs.ifr{--wxc:#d0262c} .wxs.lifr{--wxc:#b020b5}
+.wxs-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wxs-cat{background:var(--wxc);color:#fff;font-weight:700;letter-spacing:.03em;font-size:13px;padding:3px 9px;border-radius:6px}
+.wxs-st{font-size:12px;color:var(--muted)}
+.wxs-raw{font:500 14px/1.45 var(--code);color:var(--ink);word-spacing:.15em;overflow-wrap:anywhere}
+.wxs-n{font-size:13px;color:var(--ink);line-height:1.35}
+/* ---------- schedule timeline (whole day, other people's bookings kept private) ---------- */
+.sdays{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.sdays button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;font-size:13px;line-height:1.2;text-align:center}
+.sdays button b{display:block;font-size:15px}
+.sdays button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.stl-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.stl-jump{display:flex;gap:6px}
+.stl-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.stl-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.stl-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:6px 0 10px}
+.stl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 12px;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.stl-wrap::-webkit-scrollbar{height:8px}
+.stl-wrap::-webkit-scrollbar-track{background:transparent}
+.stl-wrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+.stl{position:relative;width:max(calc(118px + (100% - 118px) * 2),1500px)}
+.stl-head,.stl-row{display:grid;grid-template-columns:118px 1fr}
+.stl-hrs{position:relative;height:24px}
+.stl-hrs span{position:absolute;top:5px;transform:translateX(4px);font:11px var(--mono);color:var(--muted)}
+.stl-grp{position:sticky;left:0;width:max-content;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;padding:10px 12px 4px;background:var(--surface);z-index:4}
+.stl-row{border-top:1px solid var(--line);min-height:50px}
+.stl-lbl,.stl-head>div:first-child{position:sticky;left:0;z-index:4;background:var(--surface);box-shadow:6px 0 6px -6px rgba(0,0,0,.18)}
+.stl-lbl{padding:7px 8px 7px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.stl-lbl b{font-size:13px} .stl-lbl span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slane{position:relative;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:calc(100%/24) 100%}
+.slane.book{cursor:copy}
+.slane.book:hover{background-color:color-mix(in srgb,var(--accent) 6%,transparent)}
+.sblk{position:absolute;top:6px;bottom:6px;border-radius:7px;padding:3px 7px;font-size:11.5px;line-height:1.25;overflow:hidden;text-align:left;display:flex;flex-direction:column;justify-content:center;white-space:nowrap}
+.sblk b{font-weight:600;overflow:hidden;text-overflow:ellipsis} .sblk span{opacity:.85;overflow:hidden;text-overflow:ellipsis}
+.sblk.me{background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.sblk.busy{background:color-mix(in srgb,var(--muted) 22%,var(--surface));color:var(--muted);cursor:default}
+.sblk.mx{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 25%,var(--surface)) 0 6px,var(--surface) 6px 12px);color:var(--muted);border:1px solid var(--line);cursor:default}
+@media (max-width:600px){
+  .stl-head,.stl-row{grid-template-columns:80px 1fr}
+  .stl{width:max(calc(80px + (100% - 80px) * 2),1462px)}
+  .stl-lbl{padding:6px 4px 6px 8px}
+  .stl-lbl b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stl-lbl span{display:none}
+  .stl-row{min-height:46px}
+  .stl-grp{font-size:9.5px;padding:8px 8px 3px}
+}
+.snow{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:2;pointer-events:none}
+.legend-me{background:var(--accent)} .legend-busy{background:color-mix(in srgb,var(--muted) 30%,var(--surface))} .legend-mx{background:repeating-linear-gradient(135deg,var(--muted) 0 2px,transparent 2px 4px)}
+
+/* ---------- phone and tablet: tab bar pinned to the bottom of the screen ---------- */
+@media (max-width:899px){
+  .app>nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(420px,100%);z-index:20;box-shadow:0 -4px 14px rgba(10,18,26,.08)}
+  .app>main{padding-bottom:96px}
+  .scrim{position:fixed;z-index:30}
+  .sheet{max-width:420px;margin:0 auto}
+  .toast{position:fixed;left:0;right:0;margin:0 auto;width:min(390px,calc(100% - 32px));bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25}
+}
+/* ---------- desktop: same app, sidebar menu and wider pages ---------- */
+@media (min-width:900px){
+  body{padding-block:16px 24px}
+  .caption{max-width:1180px}
+  .app{max-width:1180px;display:grid;grid-template-columns:210px minmax(0,1fr);grid-template-rows:auto 1fr;min-height:calc(100vh - 110px);border-radius:20px}
+  .app>.top{grid-column:1/-1;border-bottom:1px solid var(--line);padding:14px 22px}
+  .app>nav{grid-column:1;grid-row:2;position:sticky;top:0;align-self:start;display:flex;flex-direction:column;gap:4px;border-top:0;background:transparent;padding:16px 10px}
+  .app>nav button{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:14.5px}
+  .app>nav button[aria-current="page"]{background:var(--accent-soft)}
+  .app>main{grid-column:2;grid-row:2;padding:22px 30px 34px;width:100%;max-width:780px}
+  .app>main.wide{max-width:none}
+  .scrim{align-items:center;justify-content:center}
+  .sheet{max-width:500px;border-radius:22px;max-height:88%}
+  .toast{left:auto;right:24px;bottom:24px;max-width:420px}
+}
+
+@keyframes up{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}
+
+body{font-variant-numeric:tabular-nums}
+</style>
+</head><body>
+<div class="caption"><span><b>Student app</b> · what J. Snuffy sees on his phone or computer</span><span class="ex">Sample student &amp; data</span></div>
+<div class="app" id="app"></div>
+
+<script src="demo.js"></script>
+<script>
+(function(){
+const D=window.DEMO||{get:(k,d)=>d,set(){},push(){},role:()=>"student",bar(){}};
+D.set("role","student"); D.bar();
+const R22={tail:"N7187K",model:"R22 Beta II",rate:295};
+const R44={tail:"N931QA",model:"R44 Raven I",rate:495};
+const INSTRUCTOR="J. Nichols, CFI-H";
+const INSTRUCTORS=[{name:INSTRUCTOR},{name:"M. Houston, CFI-H"}]; // second instructor is a sample
+const instrFree=(i,u)=>i.name===INSTRUCTOR||u.date.getDay()===4; // sample availability: M. Houston works Thursdays
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const today=new Date(); today.setHours(0,0,0,0);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const fmtTime=h=>{const hr=Math.floor(h),m=h%1?"30":"00";const ap=hr<12?"AM":"PM";return ((hr+11)%12+1)+":"+m+" "+ap};
+const fmtDate=d=>DOW[d.getDay()]+", "+MON[d.getMonth()]+" "+d.getDate();
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+const dayLabel=d=>sameDay(d,today)?"Today":sameDay(d,addDays(today,1))?"Tomorrow":fmtDate(d);
+
+// next two Tue/Thu recurring lessons
+function nextRecurring(n){const out=[];let d=addDays(today,1);while(out.length<n){if(d.getDay()===2||d.getDay()===4)out.push(new Date(d));d=addDays(d,1)}return out}
+const rec=nextRecurring(3);
+let lessonId=10;
+// Private Pilot Helicopter, Part 61: Robinson Flight Training Guide (R22/R44, Jun 2016). Titles summarized; times from the guide.
+// [code,title,dual,solo,ground,note,discussion]
+const SYL=[
+ {name:"Stage 1: Pre-solo",items:[["F1","Introduction, preflight and SFAR 73 awareness training",1,0,0,"SFAR 73",0.5],["G1","Helicopter components, systems and instruments",0,0,2],["F2","Flight control proficiency",1,0,0,"",0.5],["F3","Basic maneuvers and the airport environment",1,0,0,"",0.5],["G2","Basic aerodynamics: principles of helicopter flight",0,0,2],["F4","Crosswind effects on maneuvers",1,0,0,"",0.5],["F5","Hovering practice",1,0,0,"",0.5],["G3","Principles of helicopter flight, continued",0,0,2],["F6","Basic maneuver practice",1,0,0,"",0.5],["F7","Introduction to max performance takeoffs and steep approaches",1,0,0,"",0.5],["G4","Aerodynamics of turns, loads and autorotative descents",0,0,2],["F8","Takeoffs, approaches and hovering",1,0,0,"",0.5],["F9","Work on areas of weakness",1,0,0,"",0.5],["G5","Flight manual and helicopter performance",0,0,2],["F10","Introduction to autorotations",1,0,0,"",0.5],["F11","Systems and equipment malfunctions",1,0,0,"",0.5],["G6","Weight and balance",0,0,2],["F12","Autorotations and low rotor RPM recovery",1,0,0,"",0.5],["F13","Pre-solo maneuver review",1.5,0,0,"",0.5],["F14","180-degree autorotations",1.5,0,0,"",0.5],["G7","Stage 1 review and written exam",0,0,1,"Stage exam"],["F15","Takeoffs, approaches and autorotations",1.5,0,0,"",0.5],["F16","Pre-solo review and RHC safety checkout",1.5,0,0,"Safety checkout",0.5],["F17","Stage 1 flight check",1,0,0,"Stage check",1],["F18","First supervised solo",1,0.5,0,"Solo endorsement",1]]},
+ {name:"Stage 2: Solo, off-airport and night",items:[["F19","Second supervised solo",0.5,0.5,0,"",0.5],["G8","Weather elements I",0,0,2],["F20","Third supervised solo",0.5,0.5,0,"",0.5],["F21","Solo practice",0,1,0,"",0.5],["G9","Weather elements II",0,0,2],["F22","Confined area operations",1.5,0,0,"",1],["F23","Shallow approach and running landing",1,0,0,"",0.5],["G10","Weather reports and forecasts",0,0,2],["F24","Solo practice",0,1,0,"",0.5],["F25","Confined areas and running landings review",1.5,0,0,"",0.5],["G11","Flight computer and navigation computations",0,0,2],["F26","Night familiarization",1.5,0,0,"Night",0.5],["G12","Aeronautical Information Manual and pilot information",0,0,2],["F27","Solo practice",0,1.5,0,"",0.5],["G13","Airport and heliport operations and services",0,0,2],["F28","Stage 2 review",1,0,0,"",1],["G14","Stage 2 review and written exam",0,0,1,"Stage exam"],["F29","Stage 2 flight check",1.5,0,0,"Stage check",1.5]]},
+ {name:"Stage 3: Cross-country and checkride prep",items:[["G15","VFR charts and the navigation plotter",0,0,2],["F30","Cross-country introduction",1.5,0,0,"XC",1],["G16","Radio navigation",0,0,2],["F31","Cross-country with emergency procedures",2,0,0,"XC",1],["G17","Cross-country flight planning",0,0,2],["F32","Night cross-country, over 50 nm",1.5,0,0,"Night, XC",1],["F33","First solo cross-country",0,1,0,"Solo XC endorsement",1],["F34","Solo cross-country",0,1.5,0,"Solo XC",1],["G18","Regulations for the private pilot",0,0,2],["F35","Dual cross-country, three airports",2,0,0,"XC",1],["F36","Long solo cross-country: 100 nm, 3 airports",0,2.5,0,"Solo XC",1.5],["G19","Stage 3 review and final written exam",0,0,1,"Stage exam"],["F37","Proficiency review",1,0,0,"",0.5],["F38","Practical test preparation",1.5,0,0,"",1],["F39","Stage 3 and final flight check",1.5,0,0,"Final check",1.5]]}
+];
+// Lesson details from the Robinson R22/R44 Flight Training Guide (Jun 2016): objective, content, completion standards.
+const LDET={"F1":{"obj":"The student will be introduced to the Robinson R22/R44 helicopter and the importance of a proper preflight inspection. He will gain an understanding of safety precautions to be followed and will complete the awareness training required by SFAR 73 prior to manipulating the flight controls.","items":[["Awareness Training",["Emergency management","Mast bumping","Low rotor rpm (blade stall)","Low G hazards","Rotor rpm decay"]],["Preflight Preparation Procedures",["Required documents","Aircraft logbooks","Use of checklists","Preflight inspection","Helicopter servicing","Fuel system and octane","Equipment checks","Ground safety procedures","Cockpit management","Emergency equipment and survival gear"]],["Flight Demonstration",["Engine starting and rotor engagement","Engine and systems check","Before takeoff check","Hovering","Normal takeoff from a hover","Normal approach to a hover","Engine shutdown","After landing and securing"]],["Student Practice",["Straight and level flight","Shallow (10 degree) and medium (20 degree) bank, turns in both directions","Climbs and descents","Flight at various airspeeds"]]],"comp":["At the completion of this lesson the student, with instructor assistance, will be able to conduct a preflight inspection, use checklists, and start the engine. He will gain an understanding of the use of the flight controls and display an understanding of ground safety. He will understand the main elements of the SFAR 73 awareness training subjects."],"study":""},"F2":{"obj":"The student will review the procedures introduced in Lesson 1 to gain proficiency in the use of the flight controls.","items":[["Preflight inspection / cockpit management",[]],["Engine Starting",[]],["Engine and systems checks",[]],["Before takeoff check",[]],["Straight and level flight – student practice",[]],["Shallow and medium bank turns in both directions – student practice",[]],["Climbs and descents – student practice",[]],["Flight at various airspeeds",[]],["Engine shutdown",[]],["Ground safety procedures",[]],["Emergency equipment and survival gear",[]],["Climbing turns",[]],["Descending turns",[]],["Radio communications",[]],["Hovering",[]],["Collision avoidance procedures.",[]],["Wind drift correction",[]],["Wake turbulence and wind shear avoidance",[]],["Airport/heliport markings",[]],["Airport/heliport operations",[]]],"comp":["The student will be able to conduct the preflight inspection accurately with instructor assistance and will display increased understanding and proficiency in the use of the flight controls to control aircraft attitude."],"study":""},"F3":{"obj":"During this lesson the student will continue to gain proficiency in basic flight maneuvers and will be further introduced to the airport environment.","items":[["Preflight inspection",[]],["Engine starting",[]],["Engine and systems preflight check",[]],["Straight and level flight",[]],["Shallow and medium bank turns – both directions",[]],["Climbs and descents with and without turns",[]],["Radio communications",[]],["Hovering",[]],["Collision avoidance procedures",[]],["Wake turbulence and wind shear avoidance",[]],["Airport/heliport markings",[]],["Airport/heliport operations",[]],["Engine shutdown",[]],["Normal/crosswind takeoff from a hover",[]],["Normal/crosswind approach to a hover",[]],["Airport traffic patterns, including entry and departure procedures",[]]],"comp":["The student will have a basic understanding of the airport environment with regard to helicopter operations, and will be able to perform the preflight inspection, engine starting, engine and systems preflight checks, and engine shutdown, unassisted. He will display increased proficiency in coordinated helicopter control, and will maintain altitude within 300 feet during turns and airspeed changes."],"study":""},"F4":{"obj":"This lesson will review flight maneuvers previously introduced and emphasize how crosswinds affect these maneuvers.","items":[["Hovering",[]],["Normal/crosswind takeoff from a hover",[]],["Normal/crosswind approach to a hover",[]],["Traffic pattern procedures",[]],["Vertical takeoff to a hover",[]],["Landing from a hover",[]],["Ground reference maneuvers",[]],["Sideward, forward, and rearward hovering",[]],["Hovering turns",[]],["Hover taxi",[]]],"comp":["The student will increase proficiency in attitude control during takeoffs and approaches and he will understand how crosswind components affect these maneuvers."],"study":""},"F5":{"obj":"The student will practice basic maneuvers, concentrating on hovering.","items":[["Vertical takeoff to a hover",[]],["Hovering – sideward, forward, rearward and turns",[]],["Normal/crosswind takeoff from a hover",[]],["Normal/crosswind approach to a hover",[]],["Landing from a hover",[]],["Ground reference maneuvers",[]],["Hover taxi",[]]],"comp":["The student will show increased proficiency during takeoffs, traffic pattern operations, approaches and hovering."],"study":""},"F6":{"obj":"The student will continue to practice basic maneuvers.","items":[["Vertical takeoff to a hover",[]],["Hovering – sideward, forward, rearward and turns",[]],["Normal/crosswind takeoff from a hover",[]],["Normal/crosswind approach to a hover",[]],["Hover taxi",[]]],"comp":["The student will show increased proficiency during takeoffs, traffic pattern operations, approaches and hovering."],"study":""},"F7":{"obj":"The student will continue to practice pre-solo maneuvers and will be introduced to maximum performance takeoffs and steep approaches.","items":[["Vertical takeoff to a hover",[]],["Hovering",[]],["Normal takeoff from a hover",[]],["Normal approach to a hover",[]],["Landing from a hover",[]],["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Steep Turns – 30 degree bank angle",[]],["Air Taxi",[]]],"comp":["The student will demonstrate proper radio communications and traffic pattern procedures. Takeoffs will be performed unassisted, but approaches will be performed with instructor assistance. During straight and level flight and turns, altitude will be maintained within 250 feet, airspeed within 20 kts, and heading within 25 degrees. During climbs and descents the level off will be accomplished within 250 feet of the assigned altitude, airspeed will be maintained within 20 kts, and heading within 25 degrees."],"study":""},"F8":{"obj":"This lesson will concentrate on takeoffs, approaches, and hovering maneuvers to build proficiency.","items":[["Normal takeoffs and approaches",[]],["Maximum performance takeoffs and climbs",[]],["Steep approaches",[]],["Hovering – sideward, rearward, forward and turns",[]],["Steep turns – 30 degree bank angle",[]],["Air Taxi",[]],["Go Arounds",[]]],"comp":["The student will demonstrate an increased proficiency while hovering. He will also gain an increased understanding of maximum performance takeoffs and steep approaches."],"study":""},"F9":{"obj":"During this lesson the student will concentrate on areas of weakness.","items":[["Areas of student weakness",[]]],"comp":["The student will demonstrate an increased proficiency in areas of weakness."],"study":""},"F10":{"obj":"The student will practice weak areas and will be introduced to autorotations.","items":[["Areas of student weakness",[]],["Straight in autorotations with power recovery",[]],["Rapid decelerations – quick stops",[]]],"comp":["The student will demonstrate an increased proficiency in areas of weakness. He will gain an understanding of autorotations, and the power recovery and further develop control coordination with the introduction of quick stops."],"study":""},"F11":{"obj":"During this lesson the student will review pre-solo maneuvers as necessary and will be introduced to systems and equipment malfunctions.","items":[["Pre-solo maneuvers as necessary",[]],["Straight in autorotations with power recovery",[]],["Rapid decelerations – quick stops",[]],["Emergency procedures and equipment malfunctions",["R22/R44 Pilot's Operating Handbook","Alternator failure","Electrical fire or smoke in the cockpit","Tachometer failure","Caution lights","Warning lights","RHC safety notices"]],["Settling with power – recognition and recovery",[]],["Governor failure",[]]],"comp":["At the completion of this lesson the student will show increased proficiency in all pre- solo maneuvers. During straight and level flight and turns, altitude will be maintained within 200 feet, airspeed within 15 kts, and heading within 20 degrees. During climbs and descents the level off will be accomplished within 200 feet of the assigned altitude, airspeed will be maintained within 15 kts, and heading within 20 degrees. He will gain an understanding of the conditions that result in settling with power and systems and equipment malfunctions. During governor off operations, rpm will be maintained within 4%."],"study":""},"F12":{"obj":"During this lesson the student will continue to practice autorotations and be introduced to the recognition and recovery techniques of recovery from low rotor rpm.","items":[["Straight in autorotation",[]],["Takeoffs and approaches",[]],["Rapid decelerations – quick stops",[]],["Governor failure",[]],["Recognition and recovery from low rotor rpm",["During cruise flight","On takeoff","At a hover"]],["Hovering autorotation",[]]],"comp":["During straight in autorotation, the student will demonstrate proper entry techniques, maintain airspeed between 55 and 75 kts and rotor rpm in the green. He will gain an understanding of the effects of low rotor rpm, its recognition and proper recovery techniques."],"study":""},"F13":{"obj":"This lesson will be a review of important pre-solo maneuvers.","items":[["Takeoffs and approaches",[]],["Hovering – sideward, rearward, forward and turns",[]],["Straight in autorotation",[]],["Hovering autorotation",[]],["Rapid decelerations – quick stops",[]],["Recognition and recovery from low rotor rpm",[]],["Settling with power – recognition and recovery",[]],["Governor failure",[]]],"comp":["The student will demonstrate increased proficiency in all pre-solo maneuvers. During governor off operations, rpm will be maintained within 3%."],"study":""},"F14":{"obj":"During this lesson the student will be introduced to 180 degree autorotation and the effects of turns during autorotative descents.","items":[["Pre-solo maneuvers as necessary",[]],["180 degree autorotation with power recovery",[]],["Simulated engine failure – Forced landing",[]]],"comp":["The student will gain an understanding of the importance of attitude and rpm control during 180 degree autorotation. During forced landings the student will understand the need to immediately lower the collective to prevent a low rotor rpm situation and techniques for controlling rpm during autorotative descents."],"study":""},"F15":{"obj":"During this lesson the student will continue practicing pre-solo maneuvers, concentrating on takeoffs, approaches and autorotations.","items":[["Normal takeoffs and approaches",[]],["Maximum performance takeoffs and climbs",[]],["Steep approaches",[]],["180 degree autorotation with power recovery",[]],["Simulated engine failure – Forced landing",[]]],"comp":["During takeoffs, student will be able to maintain proper attitude control and heading.","During approaches, proper approach angles will be maintained with only minor corrections and rate of closure will not be excessive.","Entry into autorotation will be smooth, exercising proper attitude, trim, and rpm control. The flare and power recovery will be performed at prescribed altitudes.","During forced landings the student will lower the collective so as to prevent the rpm from decaying below 90%."],"study":""},"F16":{"obj":"This lesson is a review of all pre-solo maneuvers in preparation for the student's first supervised solo. During this lesson, the RHC safety checkout will be completed.","items":[["ATC/Traffic pattern procedures",[]],["Emergency procedures and equipment malfunctions",[]],["Preflight inspection",[]],["Engine starting",[]],["Engine and systems preflight check",[]],["Vertical takeoff to a hover",[]],["Hovering - sideward, rearward, forward and turns",[]],["Radio communications",[]],["Normal takeoff from a hover",[]],["Traffic pattern procedures/collision avoidance precautions",[]],["Autorotative descents with power recovery",[]],["Hovering autorotation",[]],["Simulated engine failure – Forced landing",[]],["Normal approach to a hover",[]],["Recognition and recovery from low rpm",[]],["Governor failure",[]],["Landing from a hover",[]]],"comp":["The student will demonstrate the knowledge and proficiency to safety solo the helicopter."],"study":""},"F17":{"obj":"During this stage check the Chief Flight Instructor or a designated instructor will evaluate the student's proficiency on the listed Stage 1 maneuvers and procedures to determine if the student is ready to solo the helicopter and be advanced to Stage 2.","items":[["Preflight inspection",[]],["Engine starting",[]],["Engine and systems preflight check",[]],["Vertical takeoff to a hover",[]],["Hovering - sideward, rearward, forward and turns",[]],["Radio communications",[]],["Normal takeoffs from a hover",[]],["Traffic pattern procedures/collision avoidance precautions",[]],["Autorotative descents with power recovery",[]],["Hovering autorotation",[]],["Simulated engine failure – Forced landing",[]],["Recognition and recovery from low rpm",[]],["Rapid decelerations - quick stops",[]],["Normal approach to a hover",[]],["Governor failure",[]],["Engine shutdown",[]],["Pilot's Operating Handbook",["Airworthiness requirements","Limitations","Normal procedures","Emergency procedures"]],["RHC Safety Notices",[]],["FAR Parts 61 and 91",[]],["Airspace rules and airport procedures",[]]],"comp":["This lesson and Stage 1 will be complete when the student displays skill and understanding while performing the maneuvers necessary to safety conduct solo flights in the local training area. He will maintain altitude within 150 feet, airspeed within 15 kts, and heading within 15 degrees. During governor off operations, rpm will be maintained within 2%. The student will also demonstrate sufficient knowledge of emergency operations, the R22/R44 Pilot's Operating Handbook, and RHC Safety Notices."],"study":""},"F18":{"obj":"During this lesson the instructor will review all Stage 1 and pre-solo requirements to check the student's readiness for solo flight. During the second portion of this lesson, the student will conduct his first supervised solo flight.","items":[["FAR Parts 61 and 91",[]],["R22/R44 limitations and flight characteristics",[]],["Airspace rules and airport procedures",[]],["Energy management",[]],["Mast bumping",[]],["Low G hazards",[]],["Rotor rpm decay",[]],["Normal/crosswind takeoffs and approaches",[]],["Hovering maneuvers",[]],["Radio communications",[]],["Straight in autorotations",[]],["Emergency procedures and equipment malfunctions",[]],["Vertical takeoffs to a hover",[]],["Hovering",[]],["Landings from a hover",[]],["Three normal takeoffs, traffic patterns, and normal approaches",[]]],"comp":["The dual portion of this lesson will be complete when the instructor has reviewed the student logbook to ensure all flight time and maneuver requirements have been met, has made the appropriate FAR Part 61 and SFAR 73 endorsements, and has reviewed with the student all incorrect answers to the pre-solo written test. The student will demonstrate the ability to safely solo the helicopter while adhering to established traffic pattern procedures and must satisfactorily pass the pre-solo written test with a minimum score of 80%. The solo portion of the lesson when the student has completed the first supervised solo flight."],"study":""},"F19":{"obj":"During the dual portion of this lesson, the instructor will review takeoff, traffic pattern, and approach procedures to check the student's readiness for the second supervised solo flight. During the solo portion of the lesson the student will conduct his second supervised solo flight.","items":[["Normal takeoff from a hover",[]],["Traffic pattern procedures",[]],["Hovering",[]],["Normal approach to a hover",[]],["Slope landings",[]],["Slope takeoffs",[]],["Vertical takeoffs to a hover",[]],["Hovering",[]],["Landings from a hover",[]],["Three normal takeoffs, traffic patterns, and normal approaches",[]]],"comp":["The student will gain confidence in his ability to safely solo the helicopter."],"study":""},"F20":{"obj":"During this lesson the student will review pre-solo maneuvers in preparation for his third supervised solo flight.","items":[["Maximum performance takeoffs",[]],["Steep approaches",[]],["Hovering autorotation",[]],["Autorotative descents with power recovery",[]],["Recognition and recovery from low rotor rpm",[]],["Slope takeoffs and landings",[]],["Vertical takeoffs to a hover",[]],["Hovering",[]],["Landings from a hover",[]],["Normal takeoffs, traffic patterns, and normal approaches",[]]],"comp":["The student will increase his proficiency in advanced maneuvers and gain additional confidence in his ability to safely solo the helicopter."],"study":""},"F21":{"obj":"During this lesson the student will practice the listed maneuvers to increase his proficiency and confidence in solo flight.","items":[["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Normal takeoff from a hover",[]],["Normal approach to a hover",[]],["Hovering – sideward, rearward, forward and turns",[]]],"comp":["This lesson will be complete when the student has practiced the assigned maneuvers."],"study":""},"F22":{"obj":"This lesson will introduce the student to off-airport operations in confined areas, and will stress the importance of performance planning and off-airport operating procedures. The student will gain an understanding of hazards associated with off-airport operations and review those previously covered.","items":[["Weight and balance calculations and considerations",[]],["Performance planning",["Limit manifold pressure – maximum power available","Hover performance – IGE, OGE","Never exceed speed Review"]],["Settling with power",[]],["Power failure at altitude – Forced landing",[]],["Confined area and pinnacle operations",["High reconnaissance","Low reconnaissance","Confined area & pinnacle approach and departure"]],["Hazardous conditions",["Obstructions – natural and man-made","Landing surface conditions","Dynamic rollover – slope operations"]]],"comp":["This lesson will be complete when the student demonstrates the ability to plan and execute a high and low reconnaissance. He will be able to select suitable landing areas and demonstrate good judgment in his traffic pattern procedures."],"study":""},"F23":{"obj":"During this lesson, the student will be introduced to shallow approaches to a running landing and some of the emergencies that may require a running landing.","items":[["Normal takeoff from a hover",[]],["Normal approach to a hover",[]],["Traffic pattern procedures",[]],["Autorotative descents with power recovery",[]],["Hovering autorotation",[]],["Recognition and recovery from low rotor rpm",[]],["Partial power failure",[]],["Shallow approach and running landings",[]]],"comp":["The student will gain an understanding of what conditions necessitate more advanced takeoffs and approaches. During autorotative descents the student will maintain airspeed between 60 and 75 kts and rotor rpm within the green range. Directional control during simulated power failure at a hover will be within 10 degrees and proper drift control will be exercised. The student will be able to recognize and recover from a low rpm situation prior to the rpm decaying below 90%. The student will gain an understanding of the conditions requiring a shallow approach and running landing."],"study":""},"F24":{"obj":"During this lesson the student will practice the maneuvers assigned by the instructor to increase proficiency and solo experience.","items":[["Maneuvers assigned by the flight instructor",[]]],"comp":["This lesson will be complete when the student has practiced the listed maneuvers."],"study":""},"F25":{"obj":"During this lesson the student will review off-airport operations in confined areas and running landings.","items":[["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Confined area and pinnacle operations",[]],["Slope operations",[]],["Shallow approach and running landing",[]]],"comp":["The student will demonstrate proper attitude and power control during high altitude takeoffs and maximum performance takeoffs. Heading will be maintained within 15 degrees during maximum performance takeoffs and a smooth transition to normal climb will be demonstrated. The student will maintain translational lift until ground contact during a shallow approach and running landing and demonstrate proper use of the cyclic during slope operations. During straight and level flight and turns, altitude will be maintained within 100 feet, airspeed within 10 kts, and heading within 10 degrees. The student will properly conduct the high/low reconnaissance when conducting confined area operations and select an approach angle that will ensure obstacle clearance."],"study":""},"F26":{"obj":"This lesson will familiarize the student with the special considerations and characteristics of helicopter flight at night.","items":[["Preflight planning",["Night flight planning considerations","Preflight inspection for night flight","Night vision techniques","Personal lighting devices"]],["Night Flight",["Hovering","Use of landing/search light and other switches/circuit breakers","Normal takeoff from a hover","Local area night orientation","Traffic pattern operations","Normal approach to a hover","Airport lighting","Straight in autorotation","Hovering autorotation"]]],"comp":["The student will become familiar with helicopter flight in the night environment, including airport/heliport lighting; locating and identifying switches, circuit breakers, etc.; and the types and uses of various personal lighting devices."],"study":""},"F27":{"obj":"During this lesson the student will practice the maneuvers assigned by the instructor to increase proficiency and solo experience.","items":[["Maneuvers assigned by the flight instructor",[]]],"comp":["This lesson will be complete when the student has practiced the listed maneuvers."],"study":""},"F28":{"obj":"During this lesson the student will review Stage 2 maneuvers in preparation for the Stage 2 flight check.","items":[["Confined area and pinnacle operations",[]],["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Anti-torque failure",[]],["Shallow approach and running landings",[]],["Autorotative descents",[]],["Slope operations",[]],["Rapid deceleration – quick stops",[]],["Recovery from low rotor rpm",[]],["Partial power failure",[]],["Hovering autorotation",[]],["Systems and equipment malfunctions",[]],["Simulated engine failure – Forced landing",[]],["Maneuvers selected by the instructor",[]]],"comp":["At the completion of this lesson, the student will have demonstrated increased proficiency in all advanced maneuvers. He will demonstrate early recognition and immediate recovery from all hazardous flight conditions and a good understanding of off-airport operations, emergencies, and systems and equipment malfunctions."],"study":""},"F29":{"obj":"During this lesson, the Chief Flight Instructor or a designated instructor will determine that the student meets the knowledge, proficiency and performance standards required in performing advanced maneuvers and off-airport operations.","items":[["Weight and balance computation",[]],["Performance planning",[]],["Hazardous conditions",["Adverse winds and turbulence","Settling with power","Dynamic rollover Review"]],["Confined area and pinnacle operations",[]],["Shallow approach/running landing",[]],["Slope operations",[]],["Autorotative descents",[]],["Rapid deceleration – quick stops",[]],["Recovery from low rpm",[]],["Hovering autorotation",[]],["Simulated engine failure – Forced landing",[]],["Maneuvers selected by the instructor",[]]],"comp":["During takeoffs and climbs, the student will demonstrate proper attitude and heading control.","During approaches, proper sight picture, rate of closure, and ground track will be demonstrated.","While conducting slope operations the student will demonstrate proper use of the cyclic and collective.","During autorotative descents rotor rpm will be maintained in the green arc. Airspeed will be maintained between 60 to 70 kts, and the power recovery will be executed smoothly and properly.","While executing a hovering autorotation, the student will maintain heading with 10 degrees and proper drift control will be exercised.","The student will demonstrate knowledge and understanding of systems and equipment malfunctions.","The student will be able to recognize and recover from low rpm prior to 90%.","The student will exercise proper planning and good judgment with conducting off- airport operations."],"study":""},"F30":{"obj":"During this lesson the student will be introduced to helicopter cross-country planning and procedures. The flight will consist of at least two legs and will be conducted using pilotage and dead reckoning.","items":[["Preflight planning",["Aeronautical Information Manual","Sectional and Terminal area charts","Course selection","Procurement/analysis of weather reports and forecasts","Aircraft performance – best range airspeed, fuel endurance, ground speed","Cross-country flight log","Fuel requirements"]],["Cross-Country Flight",["Navigation","Estimating visibility in flight","Recognition and avoidance of hazardous terrain"]],["Airport Operations",["Navigation","Opening and closing flight plan","Airport traffic control procedures"]],["Emergency Procedures",["Complete or partial power loss – forced landing","System and equipment malfunctions – precautionary landing","Collision avoidance and wake turbulence precautions, wind shear avoidance"]]],"comp":["At the completion of this lesson, the student will be able to plan a VFR cross-country flight. He will be prepared for VFR navigation and have the knowledge to deal with some cross-country emergencies."],"study":""},"F31":{"obj":"This lesson will expand the student's understanding of cross-country operations and emergency procedures in preparation for his first solo cross-country flight. The flight will consist of three legs using pilotage, dead reckoning and radio navigation.","items":[["Preflight planning",["Weather briefing","Course selection","Cross-country flight log","VFR flight plan"]],["Cross-Country flight operations",["Opening and closing flight plan","Pilotage navigation – check points"]],["Air traffic control procedures",[]],["Emergency Procedures",["Complete or partial power loss","System and equipment malfunction Introduction"]],["Radio Navigation (VOR/GPS) and Radar Services",[]],["Adverse weather – estimating critical weather in flight",[]],["Diversion to alternate",["As a preventative measure","Airport selection","Estimating time enroute"]],["Lost procedures",["Heading selection","Altitude selection Introduction (cont'd)"]],["Lost procedures (cont'd)",["Obtaining assistance","Emergency landing"]],["Lost Communications",["Transponder operation","Airport operations – ATC light signals"]]],"comp":["This lesson will be complete when the student demonstrates the ability to perform a cross- country flight using pilotage, dead reckoning and radio navigation. Upon completion he should be ready for his first solo cross-country flight and will understand and be capable of executing the procedures used to divert to an alternate airport as appropriate to his first solo cross-country. He will also select the best course of action when given a lost situation."],"study":""},"F32":{"obj":"This lesson will familiarize the student with night cross-country procedures. The flight will be over 50 nm total distance and will emphasize pilotage in the night environment.","items":[["Preflight planning",["Weather briefing","Course selection","Altitude selection"]],["Cross-Country flight",["Pilotage","Radio navigation (VOR/GPS) Introduction"]],["Night flying considerations",["Chart interpretation","Minimum altitude","Cockpit lighting","Airport lighting"]],["Night emergency procedures",[]]],"comp":["Upon completion of this lesson, the student will show an increased understanding of preflight planning, especially with regard to night cross-country operations. The student should act promptly to simulated emergencies, exhibiting good judgment."],"study":""},"F33":{"obj":"This lesson will be the student's first solo cross-country flight. The instructor will select a relatively easy course and review all preflight planning and make appropriate endorsements.","items":[["Preflight planning – Checked by instructor",["Sectional charts","Altitude selection","Course selection","Checkpoint selection","Distance measurements","Computation of flight time, headings, and fuel requirements","Weather briefing","Aircraft performance","Navigation log","VFR flight plan","Weight and balance"]],["Cross-Country flight",["Departure","Establishing desired course","Opening flight plan/closing flight plan","Pilotage and dead reckoning","Proper radio communications"]],["Airport operations",[]],["Instructor limitations",[]]],"comp":["The student will conduct the assigned cross-country flight. The instructor will determine how well the flight was conducted by oral examination and will check to be sure all required flight log entries have been made."],"study":""},"F34":{"obj":"During this lesson the student will gain additional confidence and understanding of cross- country flight operations. This flight will consist of a longer course than the initial solo cross-country flight.","items":[["Preflight planning – Checked by instructor",["Sectional charts","Altitude selection","Course selection","Checkpoint selection","Distance measurements","Computation of flight time, headings, and fuel requirements","Weather briefing","Aircraft performance","Navigation log","VFR flight plan","Weight and balance"]],["Cross-country flight",["Departure","Establishing desired course","Opening flight plan/closing flight plan","Pilotage and dead reckoning","VOR/GPS navigation","Computing ground speed and ETA","Proper radio communications"]],["Airport operations",[]]],"comp":["The student will conduct the assigned cross-country flight. The instructor will determine how well the flight was conducted by oral examination and will check to be sure all required flight log entries have been made."],"study":""},"F35":{"obj":"This lesson will be a longer cross-country flight with landings at three different airports. The student will be able to demonstrate a complete understanding of cross-country procedures.","items":[["Preflight planning",["Weather","Course","Altitude","Weight and balance","VFR flight plan"]],["Cross-country flight",["Pilotage, dead reckoning, radio navigation (VOR/GPS)","Diversion to an alternate","Lost procedures","Emergency procedures Introduction"]],["Ground speed check – estimating time of arrival",[]]],"comp":["Upon completion of this lesson, the student will:","Demonstrate a thorough understanding of cross-country procedures;","Be able to verify the position of the helicopter with 3 nm at all times;","Arrive at checkpoints at ± 5 minutes of his estimate;","Maintain selected altitude ± 100 feet;","Maintain the desired airspeed ± 10 knots;","Maintain the desired heading ± 10 degrees; and,","During radio navigation, locate his position relative to the radio facility and track along a given radial or bearing."],"study":""},"F36":{"obj":"This solo cross-country flight will consist of at least 100 nm total distance with landings at a minimum of three airports, one unfamiliar to the student. One segment of the flight will be at least 25 nm straight line distance from takeoff to landing. If the student has not made any solo takeoffs, traffic patterns and landings at an airport with an operating control tower, such an airport should be selected for this flight and these three operations should be accomplished.","items":[["Preflight planning – Checked by instructor",["Sectional charts","Altitude selection","Course selection","Checkpoint selection","Distance measurements","Computation of flight time, headings, and fuel requirements","Weather briefing","Aircraft performance","Navigation log","VFR flight plan","Weight and balance"]],["Cross-country flight",["Departure","Establishing desired course","Opening flight plan/closing flight plan","Pilotage and dead reckoning","VOR/GPS navigation","Computing ground speed and ETA","Proper radio communications"]],["Airport operations",[]]],"comp":["The student will conduct the assigned cross-country flight. The instructor will determine how well the flight was conducted by oral examination and will check to be sure all required flight log entries have been made."],"study":""},"F37":{"obj":"During this lesson the student will review traffic pattern operations, advanced takeoff and landings, and emergency procedures in order to maintain proficiency.","items":[["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Normal approach/takeoff",[]],["Shallow approach, running landing",[]],["Rapid deceleration – quick stops",[]],["Slope operations",[]],["Autorotative descents",[]],["Hovering autorotation",[]],["Partial power failure",[]],["Recovery from low rotor rpm",[]],["Systems and equipment malfunction",[]]],"comp":["At the completion of this lesson the student will have demonstrated increased proficiency in all advanced maneuvers."],"study":""},"F38":{"obj":"During this lesson the student will review basic flight maneuvers and emergency operations in preparation for the Stage 3 and final flight check.","items":[["Normal takeoff from a hover",[]],["Normal approach to a hover",[]],["Maximum performance takeoff and climb",[]],["Steep approach",[]],["Governor failure",[]],["Shallow approach/running landing",[]],["Rapid deceleration – quick stop",[]],["Slope operations",[]],["Autorotative descents with power recovery",[]],["Hovering autorotation",[]],["Settling with power",[]],["Systems and equipment malfunctions",[]],["Partial power failure",[]],["Recovery from low rotor rpm",[]],["Simulated engine failure – Forced landings",[]]],"comp":["During takeoff and climbs the student will demonstrate proper altitude and heading control, correcting for crosswind as appropriate.","During approaches, proper angle, rate of closure, and ground track will be demonstrated, correcting for crosswind as appropriate and terminating within 3 feet of designated point.","During running landings the student will make a smooth transition from descent to surface contact at or slightly above effective translational lift, using less than hovering power, and beyond but within 50 feet of designated point.","During simulated hazardous flight conditions the student will demonstrate immediate recognition and recovery.","During forced landings, the student will maintain rotor rpm within allowable limits immediately lowering the collective. He will establish an appropriate attitude maintaining airspeed as necessary. He will select a suitable landing area and maneuver so as to arrive at the selected area in trim, with acceptable rpm, airspeed and descent rate, and in position to make a safe autorotative landing."],"study":""},"F39":{"obj":"During this lesson the Stage 3 and Final Flight Check will be conducted by the Chief Flight Instructor or a designated instructor. He will evaluate the student's readiness for the Private Pilot – Helicopter flight test.","items":[["Oral examination",["R22/R44 Pilot's Operating Handbook","Weight and balance computation","Aircraft performance","Cross-country flight planning","Weather briefing","Federal Aviation Regulations – Parts 1, 61 and 91","Areas selected by the Chief Flight Instructor"]],["Flight check",["Cross-country flight operations","Normal and emergency maneuvers chosen by the Chief Flight Instructor"]]],"comp":["The student will demonstrate the knowledge and proficiency that meets or exceeds the minimum standards as outlined in the current FAA Rotorcraft-Helicopter Practical Test Standards for Private Pilot."],"study":""},"G1":{"obj":"This lesson will introduce the student to the R22/R44 helicopter's components, systems and instruments.","items":[["Helicopter Components",["Main rotor","Tail rotor","Transmission","Powerplant","Swashplate assembly","Gearboxes","Drive train and tailcone","Clutch","Governor"]],["Flight Controls",["Cyclic","Collective","Throttle and governor","Pedals"]],["Electrical System",["Battery","Alternator","Circuit breakers","Magnetos","Aircraft lights"]],["Fuel and Fuel System",["Proper fuel","Fuel system operation","Fuel contamination"]],["Oil and Oil System",["Type and quantity","Oil system operation"]],["Instruments – Function, Markings and Limitations",["Engine","Flight - function, markings and limitations, Pitot-static source, Alternate pitot-static source, Airspeed indicator, Pressure altimeter, Vertical speed indicator"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G2":{"obj":"During this lesson the student will study basic aerodynamics to gain an understanding of the principles of helicopter flight.","items":[["The Four Forces",["Lift","Weight","Thrust","Drag"]],["Airfoils",["Symmetrical vs. unsymmetrical","Leading edge","Trailing edge","Chord line","Relative wind","Angle of attack","Bernoulli's principle","Newton’s third law of motion","Tip path plane"]],["Factors Affecting Lift and Drag",["Surface area","Angle of attack","Velocity of airflow","Air density","Blade stall"]],["The Three Axes",["Longitudinal – roll","Lateral – pitch","Vertical – yaw"]],["Torque",["Newton's third law of motion","Tail rotor thrust","Controlling torque"]],["Rotor Systems",["Fully articulated","Semi-rigid","rigid"]],["Vibrations",["Resonance","Low frequency","Medium frequency","High frequency"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G3":{"obj":"During this lesson the student will continue to gain an understanding of the principles of helicopter flight.","items":[["Hovering Flight",["Lift and thrust resultant","Weight and drag","Axis of rotation","Coning","Blade flapping","Coriolis effect","Translating tendency or drift","Direction of airflow","Ground effect","Forward, sideward and rearward hovering","Gyroscopic precession","Pendular action"]],["Forward Flight",["Lift and thrust resultant","Weight and drag","Translational lift","Dissymmetry of lift","Transverse flow effect","Retreating blade stall","Loss of tail rotor effectiveness"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G4":{"obj":"During this lesson the student will be introduced to the aerodynamics of turns, loads and autorotative descents.","items":[["The Turn",["Lift components in a turn","Weight and centrifugal force in a turn","Angle of bank vs. angle of attack","Angle of bank vs. rate of turn"]],["Loads and Load Factor",["How conditions of flight affect loads","Load factor"]],["Autorotative Descents",["Definition","Free wheeling unit","Direction of airflow","Rotor rpm","Airspeed","Hovering autorotation"]],["Autorotative Descents (cont'd)",["Energy management"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G5":{"obj":"During this lesson the student will be introduced to the helicopter flight manual and helicopter performance.","items":[["The R22/R44 Helicopter Flight Manual",["Operating limitations","Operating procedures, Preflight, Engine starting and warmup, Engine shutdown","Performance information, Types of charts, Interpretation of charts","Angle of bank vs. rate of turn"]],["Helicopter Performance",["Effect of density altitude"]],["Helicopter Performance (cont'd)",["Effect of gross weight","Effect of wind","Carburetor icing"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G6":{"obj":"During this lesson the student will be introduced to weight and balance theory and computations.","items":[["Weight and Balance Definitions",["Empty weight","Gross weight","Maximum gross weight","Useful load","Datum","Arm","Moment","Center of gravity"]],["Weight and Balance Determinations",["Computation method – longitudinal/lateral","Graph method","Table method"]],["Weight and Balance Management",["Weight adjustment","Center of gravity adjustment","Fuel burn-off","Effect of out-of-balance loading"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G7":{"obj":"This lesson will be a review of material presented in Lessons 1 through 6, in preparation for the Stage 1 Written Examination.","items":[],"comp":["This lesson and Stage 1 will be complete when the student has passed the Stage 1 Written Examination, with a minimum score of 70%."],"study":""},"G8":{"obj":"During this lesson the student will obtain a basic understanding of weather elements and their importance to the pilot.","items":[["The Earth's Atmosphere",["Composition","Vertical structure","International standard atmosphere – ISA"]],["Temperature",["Temperature measurement","Temperature lapse rate"]],["Atmospheric Pressure and Altimetry",["Atmospheric pressure measurements","Sea level pressure","Station pressure","Pressure variations","Pressure systems"]],["Winds",["Basic theory of general circulation","Coriolis force","Pressure gradient force","Friction effect","Local wind systems"]],["Moisture",["Physical states","Measurements","Condensation and sublimation products"]],["Stability",["Causes","Effects"]],["Clouds",["Composition","Formation and structure","Types","Recognition"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G9":{"obj":"This lesson will complete the introduction of basic weather elements.","items":[["Air Masses",["Source regions","Classification and characteristics of air masses","Air mass modification"]],["Fronts",["Definition","Types","Associated weather and characteristics"]],["Turbulence",["Convective currents","Obstructions to wind flow","Wind shear","Clear air turbulence","Categories of turbulence intensity"]],["Structural Icing",["Types","Causes","Effects","Intensity","Prevention and elimination"]],["Thunderstorms",["Conditions necessary for formation","Formation and life cycle","Hazards","Avoidance procedures"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G10":{"obj":"During this lesson the student will learn to interpret and apply aviation weather reports and forecasts prepared by the national weather service.","items":[["Methods of Collecting Weather Data",["Surface observations","Upper air observations","Radar observations","Satellite observations","Pilot reports – pireps"]],["Prior/Current Weather Conditions",["Surface analysis chart","Metar","Weather depiction chart","Radar summary chart","Winds aloft chart","Awos, Asos, and Atis Reports"]],["Forecast",["Area forecast – FA","Terminal Aerodrome Forecast – TAF","Winds aloft forecast – FD"]],["Metar and TAF Codes",[]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G11":{"obj":"This lesson will introduce the flight computer and its use in navigational computations.","items":[["Calculator Side",["Explanation of markings","Mileage and speed conversions","Time, speed and distance computations","Fuel consumption","Airspeed computations","True/density altitude computations"]],["Wind Face Side",["Explanation of markings","The wind triangle","Ground speed","Wind correction angle","True headings"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G12":{"obj":"This lesson will introduce the use of the Aeronautical Information Manual and other information available to the pilot.","items":[["The Aeronautical Information Manual",["Basic flight manual and ATC procedures, Class A, B, C, D, E, and G, Prohibited, restricted, and warning areas, MOA, alert areas, Other airspace, Temporary Flight Restrictions – TFR"]],["Airport Facility Directory",["Content","Use – Legend","Applications"]],["The Advisory Circular System",[]],["The Notam System",["Notam L","Notam D, Notam FDC"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G13":{"obj":"This lesson will increase the student's understanding of airport and heliport operations and facilities, and services available to pilots.","items":[["Airports and Heliports",["Runway numbering","Active runways","Runway and heliport markings","Taxiways","Parking areas","Field elevation","Wind direction indicators","Airport and heliport lighting","Airport traffic patterns"]],["Radio Communications",["Frequency assignment plan","Contact procedure","Microphone technique","Aircraft call signs","Radio phraseology","Light signals"]],["Airport and Heliport Communications",["Controlled airports and heliports","Uncontrolled airports and heliports"]],["Other ATC Facilities and Services",["Air route traffic control center","Approach control","Departure control"]],["FSS Services Available",["Flight watch","Transcribed weather broadcasts","Scheduled weather broadcasts","In-flight services available to the pilot"]],["Emergency Procedures",["Emergency locator transmitter","Emergency VHF frequency – 121.5","Transponder codes"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G14":{"obj":"This lesson will be a review of material presented in Lessons 8 through 13 in preparation for the Stage 2 Written Examination.","items":[],"comp":["This lesson and Stage 2 will be complete when the student has passed the Stage 2 Written Examination, covering the material presented in Lessons 8 through 13, with a minimum score of 70%."],"study":""},"G15":{"obj":"This lesson will introduce VFR charts and the navigation plotter, and their use in planning and conducting cross-country flights.","items":[["VFR charts",["General considerations","Symbols and markings"]],["The Navigation Plotter",["Mileage scales","Azimuth scale","Plotting and measuring courses 3 Application of Navigation Methods","Pilotage","Dead reckoning"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G16":{"obj":"This lesson will introduce radio navigation and its application in cross-country flight.","items":[["VHF Omni directional Range System – VOR",["Receiver components","VOR radials","VOR navigation","VOR navigation procedures","VOR indications","VOR orientation","Position fixing","Intercepting a radial","VOR test signals – VOT"]],["Distance Measuring Equipment – DME",[]],["Area Navigation – RNAV",[]],["Automatic Direction Finder – ADF",[]],["Global Positioning System – GPS",["System description","VFR use of GPS","Database currency","RAIM"]],["VHF Omni directional Range System – VOR",["Radar, Phraseology, Modes and codes","VHF Direction Finder"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G17":{"obj":"This lesson incorporates the subjects of previous lessons into the planning of a cross- country flight.","items":[["Chart Selection",[]],["Weather Briefing and Course Selection",[]],["Navigation Log",["True course","Altitude selection","Winds aloft and temperature","Wind correction angle","True airspeed, ground speed","True heading","Magnetic variation","Magnetic heading","Deviation","Compass heading","Time estimates – ETE and ETA","Fuel requirements"]],["Airport Information for Destination",["VFR charts","Airport Facilities Directory 5 VFR Flight Plan","Filing","Opening","Extending if necessary","Closing/Cancelling"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G18":{"obj":"This lesson reviews the Federal Aviation Regulations discussed as an integral part of previous lessons and introduces other regulations applicable to the private pilot's certification. In addition, the student will be introduced to physiological and psychological factors which can affect the comfort and safety of the pilot and his passengers.","items":[["Federal Aviation Regulations",["FAR Part 1","FAR Part 61","FAR Part 91","NTSB, Part 830"]],["Physiological Considerations",["Fatigue","Hypoxia","Alcohol","Drugs","Vertigo","Carbon monoxide","Vision","Middle ear 3 Psychological Considerations","Anxiety","Stress"]]],"comp":["This lesson will be complete when, by oral examination, the student displays an understanding of the material presented and has completed the study assignment."],"study":""},"G19":{"obj":"This lesson will be a review of material presented in Lessons 1 through 18 in preparation for the Stage 3 and Final Written Examination.","items":[],"comp":["This lesson and Stage 3 will be complete when the student has passed the Stage 3 and Final Written Examination, covering the material presented in Lessons 1 through 18, with a minimum score of 70%."],"study":""}};
+const SYLMAP={};SYL.forEach(st=>st.items.forEach(i=>SYLMAP[i[0]]=i));
+const lessonName=code=>code+" · "+SYLMAP[code][1];
+// Required documents. status: need | review | ok. Sample: J. Snuffy is close to first solo and still needs the student pilot certificate.
+const DOCS=[
+  {id:"id",n:"Government photo ID",why:"Driver's license or passport",status:"ok",file:"drivers-license.jpg",when:"Sep 12"},
+  {id:"cit",n:"Proof of U.S. citizenship",why:"Passport, or birth certificate with photo ID. Required by TSA before flight training. Your instructor also checks the original in person.",status:"ok",file:"passport.pdf",when:"Sep 12"},
+  {id:"med",n:"Medical certificate",why:"Third class or higher. Needed to solo.",status:"ok",file:"medical.jpg",when:"Sep 12",exp:"2028-08-31",cls:"Second class"},
+  {id:"spc",n:"Student pilot certificate",why:"From IACRA (plastic card or temporary). Needed before your first solo (F18).",status:"need",due:"F18"}
+];
+const DONE0=["G1","G2","G3","G4","G5","G6","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12","F13"];
+const state={
+  tab:"home",
+  balance:1180,
+  calendar:"Google Calendar",
+  upcoming:[
+    {id:1,code:"F14",date:today,start:17,ac:R22,lesson:lessonName("F14"),obj:"Introduction to 180-degree autorotations and how turns affect autorotative descents. Review the R22 POH emergency procedures before the flight.",mxOk:false,recurring:true,instr:INSTRUCTOR},
+    {id:2,code:"F15",date:rec[1],start:8,ac:R22,lesson:lessonName("F15"),obj:"Pre-solo practice concentrating on takeoffs, approaches and autorotations.",mxOk:false,recurring:true,instr:INSTRUCTOR},
+    {id:3,code:"F16",date:rec[2],start:8,ac:R22,lesson:lessonName("F16"),obj:"Review of all pre-solo maneuvers, and the RHC safety checkout is completed.",mxOk:false,recurring:true,instr:INSTRUCTOR},
+  ],
+  past:[
+    {date:addDays(today,-5),start:8,ac:R22,lesson:lessonName("F13"),hrs:1.5,notes:"Entries are solid. Flare timing improving; work on holding RPM in the green during the deceleration."},
+    {date:addDays(today,-7),start:8,ac:R22,lesson:lessonName("F12"),hrs:1.2,notes:"Consistent pattern altitudes. Approach angle steepens on short final; keep the sight picture fixed."},
+    {date:addDays(today,-12),start:9,ac:R22,lesson:lessonName("F11"),hrs:1.1,notes:"Good slope technique. Quick stops need more anticipation of power as the nose comes up."},
+  ],
+  bookDay:addDays(today,1), pending:null, sheet:null, cancelling:null, toast:null,
+  wb:{stu:165,ins:190,fuel:10}, wx:false,
+  lastIn:{N7187K:{at:(()=>{const d=new Date(Date.now()-40*60000);return d})(),by:"M. Houston (Chris Morgan, F3)"},N931QA:{at:(()=>{const d=addDays(today,-1);d.setHours(15,10);return d})(),by:"J. Nichols"}},
+  lessonDay:true, flight:null, hobbs:2812.4, tach:2640.1, hours:18.4, lessonsDone:12, pay:"balance",
+  done:new Set(DONE0), ground:[{id:101,code:"G7",date:today,start:13,dur:1,instr:INSTRUCTOR}],
+  bookMode:"flight", gSel:null, lessonsView:"schedule", openStages:new Set(["Stage 1: Pre-solo"])
+};
+// sample figures for the demo; real values come from settings and the aircraft record
+const INSTR_RATE=65, FUEL_LB=6;
+const money=n=>"$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const nowTime=()=>new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+
+// maintenance status for the assigned R22 (sample numbers)
+const MX=[
+  {lbl:"100-hour inspection",val:"14.2 hr remaining · due at tach 2,654.3",st:"ok"},
+  {lbl:"Annual inspection",val:"Due Mar 15, 2027",st:"ok"},
+  {lbl:"Overhaul (2,200 hr / 12 yr)",val:"1,950.0 hr remaining",st:"ok"},
+  {lbl:"Recurring ADs / service bulletins",val:"Next: SB-104 inspection in 8.6 hr",st:"warn"},
+  {lbl:"Documents (ARROW)",val:"Registration, airworthiness, insurance current",st:"ok"},
+  {lbl:"Open squawks",val:"1 deferred: left door seal worn (not airworthiness)",st:"warn"},
+];
+const ST={ok:"Good",warn:"Watch",bad:"Grounded"};
+const mxValid=n=>!!(n&&n.mxAt&&n.mxAt>state.lastIn[n.ac.tail].at);
+const whenStr=d=>(sameDay(d,new Date())?"today":sameDay(d,addDays(today,-1))&&!state.lessonDay?"yesterday":fmtDate(d))+" at "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+
+function gSlotsFor(d){
+  if(d.getDay()===0)return [];
+  const base=[9,10.5,13,15,17,18.5], seed=d.getDate()+2;
+  return base.filter((h,i)=>(seed+i)%3!==1).filter(h=>!state.upcoming.some(u=>sameDay(u.date,d)&&h<u.start+2&&h+2>u.start)&&!state.ground.some(g=>sameDay(g.date,d)&&h<g.start+g.dur&&h+2>g.start));
+}
+function slotsFor(d){
+  if(d.getDay()===0)return [];
+  return [8,9.5,11,13,14.5,16].filter(h=>schedFree(d,h,h+2,"N7187K",INSTRUCTOR.split(",")[0]));
+}
+
+const icons={
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>',
+  schedule:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M7 13h4M13 13h4M7 17h6"/></svg>',
+  book:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>',
+  lessons:'<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+  progress:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'
+};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const a=document.getElementById("app");
+  const sch=state.tab==="schedule"||state.tab==="book";
+  const v=sch?`<h1>Schedule</h1><div class="seg" role="group" aria-label="Schedule view"><button data-tab="schedule" aria-pressed="${state.tab==="schedule"}">Timeline</button><button data-tab="book" aria-pressed="${state.tab==="book"}">Find a time</button></div>`+(state.tab==="book"?viewBook():viewSchedule())
+    :{home:viewHome,lessons:viewLessons,progress:viewProgress}[state.tab]();
+  const w0=a.querySelector(".stl-wrap");if(w0&&STL_X!==-1)STL_X=w0.scrollLeft;if(STL_X===-1)STL_X=null;
+  a.innerHTML=`
+    <div class="top"><div class="brand">AS<span>&amp;</span>S · Training</div><button class="avatar" data-act="docs" aria-label="My documents">JS${DOCS.some(d=>d.status==="need")?'<span class="dot-need"></span>':""}</button></div>
+    <main class="${state.tab==="schedule"?"wide":""}">${v}</main>
+    <nav aria-label="Student app">${["home","schedule","lessons","progress"].map(t=>`<button data-tab="${t}" ${state.tab===t||(t==="schedule"&&sch)?'aria-current="page"':""}>${icons[t]}${{home:"Home",schedule:"Schedule",lessons:"My lessons",progress:"Progress"}[t]}</button>`).join("")}</nav>
+    ${state.sheet?sheetHtml():""}
+    ${state.toast?`<div class="toast" role="status">${esc(state.toast)}</div>`:""}`;
+  const w=a.querySelector(".stl-wrap");if(w){const ln=w.querySelector(".slane");w.scrollLeft=STL_X!=null?STL_X:(ln?ln.offsetWidth*(sameDay(state.schedDay||today,today)?DEMO_NOW-0.5:7)/24:0) /* today opens at the current time, other days at 7 AM */}
+}
+
+const isSchedF=c=>state.upcoming.some(u=>u.code===c), isSchedG=c=>state.ground.some(g=>g.code===c);
+const nextFlightCode=()=>{for(const st of SYL)for(const i of st.items)if(i[0][0]==="F"&&!state.done.has(i[0])&&!isSchedF(i[0]))return i[0];return null};
+const openGround=()=>{const out=[];for(const st of SYL)for(const i of st.items)if(i[0][0]==="G"&&!state.done.has(i[0])&&!isSchedG(i[0]))out.push(i[0]);return out};
+const nextGround=()=>state.ground.slice().sort((a,b)=>a.date-b.date||a.start-b.start)[0];
+/* weather at the field, colored by flight category (same report the console shows) */
+function wxCard(){if(!D.wx)return "";const w=D.wx(),vis=w.vis<1?"1/2":w.vis>=10?"10+":w.vis;
+  const note={VFR:"VFR at the field.",MVFR:"Marginal VFR. Talk it over with your instructor before the flight.",IFR:"IFR at the field. VFR lessons can't go until it improves.",LIFR:"Low IFR at the field. VFR lessons can't go until it improves."}[w.cat];
+  return `<div class="wxs ${w.cat.toLowerCase()}" title="${D.WX_WHY[w.cat]}"><div class="wxs-h"><span class="wxs-cat">${w.cat}</span><span class="wxs-st">KCMD · ${w.time} local</span></div>
+    <div class="wxs-raw">METAR ${esc(w.raw)}</div>
+    ${w.cat==="VFR"?"":`<div class="wxs-n">${note}</div>`}</div>`}
+function viewHome(){
+  const n=state.upcoming[0];
+  const f=state.flight;
+  let action="";
+  if(n&&f&&f.phase==="flying"){
+    action=`<div class="mx-row"><span class="pill ok">Flying · dispatched ${f.out}</span>
+      <button class="btn small primary" data-act="checkin">Check in aircraft</button></div>
+      <button class="demo" data-act="checkin-instr">Demo: instructor checks in from their phone (can set the instruction rate)</button>
+      <button class="btn small ghost" data-act="email" style="align-self:flex-start">View dispatch email</button>`;
+  }else if(n&&state.lessonDay){
+    action=`<div class="mx-row">
+      ${mxValid(n)?`<span class="pill ok">Maintenance reviewed</span>`:`<span class="pill warn">Maintenance check needed</span>`}
+      <button class="btn small ${mxValid(n)?"ghost":"primary"}" data-act="mx">${mxValid(n)?"View check":"Aircraft check"}</button></div>
+      <button class="btn primary block" data-act="dispatch" ${mxValid(n)?"":"disabled"} style="${mxValid(n)?"":"opacity:.45;cursor:not-allowed"}">Start flight (dispatch)</button>
+      ${mxValid(n)?`<button class="demo" data-act="otherflight">Demo: another flight checks in ${n.ac.tail} before you dispatch</button>`:`<p class="note" style="margin:0">${n.mxAt?"This aircraft has flown since your last check. Check it again to unlock dispatch.":"Complete the aircraft check to unlock dispatch."}</p>`}`;
+  }else if(n){
+    action=`<div class="mx-row">
+        <span class="note">Aircraft check opens on lesson day</span>
+        <button class="btn small ghost" data-act="mx">Preview status</button>
+      </div>`;
+  }
+  const lessonCard=n?`
+    <section class="card lesson" aria-label="Next lesson">
+      <h2 style="margin:0">${f&&f.phase==="flying"?"In progress":"Next lesson"}</h2>
+      <div class="lesson-when"><span class="day">${state.lessonDay?"Today":dayLabel(n.date)}</span><span class="time">${fmtTime(n.start)} – ${fmtTime(n.start+2)}</span></div>
+      <dl class="facts">
+        <div><dt>Instructor</dt><dd>${n.instr}</dd></div>
+        <div><dt>Aircraft</dt><dd>${n.ac.model} <span class="mono" style="color:var(--muted)">${n.ac.tail}</span></dd></div>
+      </dl>
+      ${n.changed?`<div class="changed">${esc(n.changed)}</div>`:""}
+      <div class="objective"><b>${esc(n.lesson)}</b></div>
+      ${action}
+      ${!f?`<button class="linkbtn" data-tab="lessons">Details, changes or cancel in My lessons</button>`:""}
+    </section>
+    ${""}`:`<div class="empty">No lessons booked.</div>`;
+  return `
+    <div><p class="sub">Good afternoon</p><h1>J. Snuffy</h1></div>
+    ${wxCard()}
+    ${lessonCard}
+    ${(()=>{const g=nextGround();return g&&!f?`<section class="card gcard"><div class="li-top"><span class="pill gpill">Ground</span><span class="li-meta">${dayLabel(g.date)} · ${fmtTime(g.start)} · ${g.dur.toFixed(1)} hr</span></div><b>${esc(lessonName(g.code))}</b><span class="li-meta">${g.instr.split(",")[0]} · Classroom</span></section>`:""})()}
+    <div class="row2">
+      <div class="card stat"><div class="k">Account balance</div><div class="v mono">${money(state.balance)}</div><div class="note">Prepaid flight funds</div></div>
+      <div class="card stat"><div class="k">Toward Private</div><div class="v mono">${state.hours.toFixed(1)} hr</div><div class="note">of 40 hr minimum (Part 61)</div></div>
+    </div>
+    ${(()=>{const need=DOCS.filter(d=>d.status==="need"),rev=DOCS.filter(d=>d.status==="review");
+      return need.length?`<button class="doccard need" data-act="docs"><span class="dc-ic">!</span><span><b>${need.length} document${need.length>1?"s":""} needed</b><span>${esc(need[0].n)}${need[0].due?" · before "+need[0].due:""}</span></span><span class="dc-go">Upload</span></button>`
+        :rev.length?`<button class="doccard" data-act="docs"><span class="dc-ic">…</span><span><b>Documents in review</b><span>${rev.length} waiting for your instructor</span></span><span class="dc-go">View</span></button>`
+        :`<button class="doccard ok" data-act="docs"><span class="dc-ic">✓</span><span><b>Documents complete</b><span>${DOCS.length} on file</span></span><span class="dc-go">View</span></button>`})()}
+    <button class="safetybtn" data-act="safety"><b>Report a safety concern</b><span>Confidential. Goes to the safety manager. Anonymous if you choose.</span></button>
+    <div class="cal"><span class="dot"></span>Lessons sync to ${state.calendar}</div>`;
+}
+
+/* ---------- SCHEDULE: whole day for aircraft and instructors; only your own bookings show details ---------- */
+const DEMO_NOW=10+40/60; // same demo clock as the owner console
+let STL_X=null;
+const ME_NAME="J. Snuffy";
+const TL_INSTR=()=>{const R=D.pilotRoles?D.pilotRoles():{"J. Nichols":{instructor:true},"M. Houston":{instructor:true}};return Object.keys(R).filter(n=>R[n].instructor)};
+function seededBusy(d){ // sample bookings for days the owner demo doesn't cover
+  if(d.getDay()===0)return [];
+  const k=d.getDate(),out=[],pick=(i)=>(k+i)%3!==0;
+  [[8,10,"J. Nichols"],[10.5,12.5,"M. Houston"],[13,15,"J. Nichols"],[15.5,17.5,"M. Houston"]].forEach(([s,e,w],i)=>{if(pick(i))out.push({ac:"N7187K",who:w,s,e,kind:"busy"})});
+  if(d.getDay()===5||d.getDay()===6)out.push({ac:"N931QA",who:"R. Ellis",s:10,e:15,kind:"busy"});
+  else if(pick(5))out.push({ac:"N931QA",who:"J. Nichols",s:13,e:15,kind:"busy"});
+  if(pick(6))out.push({ac:null,who:"M. Houston",s:8,e:9,kind:"busy"});
+  return out;
+}
+function schedDay(d){
+  let L=[];
+  if(sameDay(d,today)){
+    (D.dayBook?D.dayBook():[]).filter(b=>b.st!=="cancelled").forEach(b=>{const [who,code]=(b.t||"").split(" · ");const me=who===ME_NAME;
+      L.push({ac:b.ac,who:b.who,s:b.s,e:b.e,kind:me?"me":b.type==="mx"?"mx":"busy",code:me?(code||"").split(" ")[0]:null,ground:b.type==="ground"})});
+  }else L=seededBusy(d);
+  const have=new Set(L.filter(x=>x.code).map(x=>x.code));
+  state.upcoming.filter(u=>sameDay(u.date,d)&&!have.has(u.code)).forEach(u=>L.push({ac:u.ac.tail,who:u.instr.split(",")[0],s:u.start,e:u.start+2,kind:"me",code:u.code}));
+  state.ground.filter(g=>sameDay(g.date,d)&&!have.has(g.code)).forEach(g=>L.push({ac:null,who:g.instr.split(",")[0],s:g.start,e:g.start+g.dur,kind:"me",code:g.code,ground:true}));
+  // drop sample bookings that collide with your own
+  const mine=L.filter(x=>x.kind==="me");
+  return L.filter(x=>x.kind==="me"||!mine.some(m=>m.s<x.e&&x.s<m.e&&((m.ac&&m.ac===x.ac)||m.who===x.who)));
+}
+function schedFree(d,s,e,ac,who){return !schedDay(d).some(x=>x.s<e&&s<x.e&&((ac&&x.ac===ac)||(who&&x.who===who)))}
+function viewSchedule(){
+  const d=state.schedDay||today,L=schedDay(d),pct=h=>h/24*100;
+  const rows=[{k:"ac",id:"N7187K",l:"N7187K",sub:"R22 · training"},{k:"ac",id:"N931QA",l:"N931QA",sub:"R44"},...TL_INSTR().map(n=>({k:"p",id:n,l:n,sub:"Instructor"}))];
+  const lane=r=>L.filter(x=>r.k==="ac"?x.ac===r.id:x.who===r.id).map(x=>{const me=x.kind==="me",lbl=me?"You · "+(x.code||"Lesson"):x.kind==="mx"?"Maintenance":"Booked";
+    return `<${me?"button":"div"} class="sblk ${x.kind}" style="left:${pct(x.s)}%;width:${(x.e-x.s)/24*100}%" ${me?'data-act="mine"':""} title="${lbl} · ${fmtTime(x.s)}–${fmtTime(x.e)}"><b>${esc(lbl)}</b><span>${fmtTime(x.s)}${me&&r.k==="ac"?" · "+esc(x.who):me&&r.k==="p"?(x.ac?" · "+x.ac:" · Classroom"):""}</span></${me?"button":"div"}>`}).join("");
+  const days=[...Array(7)].map((_,i)=>addDays(today,i));
+  const hrs=[...Array(24)].map((_,h)=>`<span style="left:${pct(h)}%">${h%12||12}${h<12?"a":"p"}</span>`).join("");
+  const now=sameDay(d,today)?`<div class="snow" style="left:${pct(DEMO_NOW)}%"></div>`:"";
+  const rowHtml=r=>`<div class="stl-row"><div class="stl-lbl"><b class="${r.k==="ac"?"mono":""}">${r.l}</b><span>${r.sub}</span></div><div class="slane ${r.id==="N931QA"?"":"book"}" data-slane="${r.k}" data-sid="${r.id}">${lane(r)}${now}</div></div>`;
+  return `
+    <div><p class="sub">The whole day for the aircraft and instructors. Other people's bookings show as Booked. Tap an open spot on the R22 or an instructor to book a lesson there.</p></div>
+    <div class="sdays" role="group" aria-label="Pick a day">${days.map(x=>`<button data-sday="${x.toISOString()}" aria-pressed="${sameDay(x,d)}">${sameDay(x,today)?"Today":DOW[x.getDay()]}<b>${x.getDate()}</b></button>`).join("")}</div>
+    <div class="stl-bar"><div class="stl-legend"><span><i class="legend-me"></i>Your lessons</span><span><i class="legend-busy"></i>Booked</span><span><i class="legend-mx"></i>Maintenance</span></div>
+</div>
+    <div class="stl-card"><div class="stl-wrap"><div class="stl">
+      <div class="stl-head"><div></div><div class="stl-hrs">${hrs}</div></div>
+      <div class="stl-grp">Aircraft</div>${rows.filter(r=>r.k==="ac").map(rowHtml).join("")}
+      <div class="stl-grp">Instructors</div>${rows.filter(r=>r.k==="p").map(rowHtml).join("")}
+    </div></div></div>
+    <p class="note">Lessons book as a 2-hour block in the R22 with brief and debrief. Free cancellation up to 24 hours before.</p>`;
+}
+function viewBook(){
+  const days=[...Array(10)].map((_,i)=>addDays(today,i+1));
+  const toggle=`<div class="seg" role="group" aria-label="Lesson type"><button data-mode="flight" aria-pressed="${state.bookMode==="flight"}">Flight</button><button data-mode="ground" aria-pressed="${state.bookMode==="ground"}">Ground</button></div>`;
+  if(state.bookMode==="ground"){
+    const opts=openGround().slice(0,3);
+    if(!state.gSel||!opts.includes(state.gSel))state.gSel=opts[0]||null;
+    const L=state.gSel&&SYLMAP[state.gSel], gs=gSlotsFor(state.bookDay);
+    return `
+    <div><p class="sub">Ground lessons are with your instructor in the classroom. No aircraft needed.</p></div>
+    ${toggle}
+    ${L?`<h2>Ground lesson</h2>
+    <div class="opts" role="radiogroup">${opts.map(c=>`<button class="opt" role="radio" aria-checked="${c===state.gSel}" data-gsel="${c}"><b>${esc(lessonName(c))}</b><span>${SYLMAP[c][4].toFixed(1)} hr${SYLMAP[c][5]?" · "+SYLMAP[c][5]:""}</span></button>`).join("")}</div>
+    <div class="days" role="group" aria-label="Pick a day">${days.map(d=>`<button class="day-btn" data-day="${d.toISOString()}" aria-pressed="${sameDay(d,state.bookDay)}"><div class="dow">${DOW[d.getDay()]}</div><div class="dn">${d.getDate()}</div></button>`).join("")}</div>
+    <h2>${fmtDate(state.bookDay)} · ${L[4].toFixed(1)} hr</h2>
+    ${gs.length?`<div class="slots">${gs.map(h=>`<button class="slot" data-gslot="${h}">${fmtTime(h)}</button>`).join("")}</div>`:`<div class="empty">No open times this day. Try another day.</div>`}
+    <p class="note">Only the next ground lessons in your syllabus can be booked. Times shown are when ${INSTRUCTOR.split(",")[0]} is free and you have no flight.</p>`
+    :`<div class="empty">All ground lessons are booked or complete.</div>`}`;
+  }
+  const slots=slotsFor(state.bookDay), nf=nextFlightCode();
+  return `
+    <div><p class="sub">Open 2-hour times when ${INSTRUCTOR.split(",")[0]} and a training aircraft are both free.</p></div>
+    ${toggle}
+    ${nf?`<div class="objective"><b>Next flight lesson</b>${esc(lessonName(nf))}</div>`:""}
+    <div class="days" role="group" aria-label="Pick a day">${days.map(d=>`<button class="day-btn" data-day="${d.toISOString()}" aria-pressed="${sameDay(d,state.bookDay)}"><div class="dow">${DOW[d.getDay()]}</div><div class="dn">${d.getDate()}</div></button>`).join("")}</div>
+    <h2>${fmtDate(state.bookDay)} · 2-hour block</h2>
+    ${slots.length?`<div class="slots">${slots.map(h=>`<button class="slot" data-slot="${h}">${fmtTime(h)}</button>`).join("")}</div>`:`<div class="empty">No open times this day. Try another day.</div>`}
+    <p class="note">Includes preflight brief and debrief. The aircraft is assigned for you.</p>`;
+}
+
+function lessonDetail(i){
+  const d=LDET[i[0]];if(!d)return "";
+  const time=i[0][0]==="G"?`${i[4].toFixed(1)} hr ground training`:[i[2]?i[2].toFixed(1)+" hr dual":"",i[3]?i[3].toFixed(1)+" hr solo":"",i[6]?i[6].toFixed(1)+" hr pre/post-flight discussion":""].filter(Boolean).join(" · ");
+  const past=state.past.find(p=>p.lesson===lessonName(i[0]));
+  return `<div class="ldet">
+    <div class="ld-time">${time}</div>
+    <h3>Objective</h3><p>${esc(d.obj)}</p>
+    ${d.items.length?`<h3>What's covered</h3><ol class="ld-items">${d.items.map(([t,sub])=>`<li><b>${esc(t)}</b>${sub.length?`<span>${sub.map(esc).join(" · ")}</span>`:""}</li>`).join("")}</ol>`:""}
+    <h3>Completion standards</h3>${d.comp.length>1?`<ol class="ld-comp">${d.comp.map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:`<p>${esc(d.comp[0])}</p>`}
+    ${d.study?`<h3>Study assignment</h3><p>${esc(d.study)}</p>`:""}
+    ${past?`<h3>Instructor notes</h3><p class="ld-notes">${esc(past.notes)}</p>`:""}
+  </div>`;
+}
+function viewSyllabus(){
+  const dF=[...state.done].filter(c=>c[0]==="F").length, dG=[...state.done].filter(c=>c[0]==="G").length;
+  const nf=nextFlightCode(), og=openGround().slice(0,3);
+  const st=c=>{
+    if(state.done.has(c))return `<span class="st done">Done</span>`;
+    const u=state.upcoming.find(x=>x.code===c);if(u)return `<span class="st sched">${fmtDate(u.date).replace(/^\w+, /,"")}</span>`;
+    const g=state.ground.find(x=>x.code===c);if(g)return `<span class="st sched">${fmtDate(g.date).replace(/^\w+, /,"")}</span>`;
+    if(c===nf)return `<button class="btn small primary" data-bookf="1">Book</button>`;
+    if(og.includes(c))return `<button class="btn small ghost" data-bookg="${c}">Book</button>`;
+    return "";
+  };
+  return `
+    <section class="card prog">
+      <div><b>Private Pilot – Helicopter</b><div class="li-meta">Part 61 · Robinson Flight Training Guide (R22/R44) · Enrolled Sep 2026</div></div>
+      <div class="pbar"><span>Flight lessons</span><span class="mono">${dF} / 39</span></div><div class="meter"><i style="width:${(dF/39*100).toFixed(1)}%"></i></div>
+      <div class="pbar"><span>Ground lessons</span><span class="mono">${dG} / 19</span></div><div class="meter"><i style="width:${(dG/19*100).toFixed(1)}%"></i></div>
+      <div class="li-meta">Average course: 40 hr dual · 10 hr solo · 35 hr ground. Part 61 minimum: 40 hr total (20 dual, 10 solo).</div>
+    </section>
+    ${SYL.map(stg=>{const done=stg.items.filter(i=>state.done.has(i[0])).length;return `
+    <details class="stage" data-stage="${esc(stg.name)}" ${state.openStages.has(stg.name)?"open":""}>
+      <summary><span>${esc(stg.name)}</span><span class="mono li-meta">${done}/${stg.items.length}</span></summary>
+      <div class="syl">${stg.items.map(i=>{const open=state.openLesson===i[0];return `<div class="syl-w ${open?"open":""}"><div class="syl-i ${state.done.has(i[0])?"is-done":""}" data-lx="${i[0]}" role="button" tabindex="0" aria-expanded="${open}">
+        <span class="code ${i[0][0]==="G"?"g":"f"}">${i[0]}</span>
+        <span class="syl-t">${esc(i[1])}<span class="li-meta">${i[0][0]==="G"?i[4].toFixed(1)+" hr ground":(i[2]?i[2].toFixed(1)+" dual":"")+(i[2]&&i[3]?" + ":"")+(i[3]?i[3].toFixed(1)+" solo":"")}${i[5]?" · "+esc(i[5]):""}</span></span>
+        <span class="syl-r">${st(i[0])}<span class="chev" aria-hidden="true"></span></span></div>
+        ${open?lessonDetail(i):""}</div>`}).join("")}</div>
+    </details>`}).join("")}
+    <p class="note">Lesson details are from the Robinson R22/R44 Flight Training Guide (Jun 2016). Your instructor may adjust lesson times to fit your progress.</p>`;
+}
+function viewLessons(){
+  const seg=`<div class="seg" role="group" aria-label="Lessons view"><button data-lview="schedule" aria-pressed="${state.lessonsView==="schedule"}">Upcoming</button><button data-lview="syllabus" aria-pressed="${state.lessonsView==="syllabus"}">Syllabus</button></div>`;
+  if(state.lessonsView==="syllabus")return `<h1>My lessons</h1>${seg}${viewSyllabus()}`;
+  const items=state.upcoming.map(u=>({k:"f",u,d:u.date,t:u.start})).concat(state.ground.map(g=>({k:"g",u:g,d:g.date,t:g.start}))).sort((a,b)=>a.d-b.d||a.t-b.t);
+  const firstF=items.find(x=>x.k==="f");
+  const up=items.map(({k,u})=>k==="g"?`
+    <div class="card li">
+      <div class="li-top"><span class="li-title">${dayLabel(u.date)} · ${fmtTime(u.start)}</span><span class="pill gpill">Ground</span></div>
+      <div class="li-meta">${esc(lessonName(u.code))}</div>
+      <div class="li-meta">${u.instr.split(",")[0]} · Classroom · ${u.dur.toFixed(1)} hr</div>
+      ${state.cancelling==="g"+u.id?`
+        <div class="confirm-box"><span>Cancel this ground lesson? No fee more than 24 hours ahead.</span>
+          <div class="li-actions"><button class="btn small danger" data-act="docancelg" data-gid="${u.id}">Cancel lesson</button><button class="btn small ghost" data-act="keep">Keep it</button></div></div>`
+      :`<div class="li-actions"><button class="btn small ghost" data-act="cancelg" data-gid="${u.id}">Cancel</button></div>`}
+    </div>`:`
+    <div class="card li">
+      <div class="li-top"><span class="li-title">${dayLabel(u.date)} · ${fmtTime(u.start)}</span>${u.changed?`<span class="pill warn">Updated</span>`:mxValid(u)?'<span class="pill ok">Mx reviewed</span>':""}</div>
+      <div class="li-meta">${esc(u.lesson)} · ${u.recurring?"repeats Tue/Thu":"one-time"}</div>
+      <div class="li-meta">${u.instr.split(",")[0]} · ${u.ac.model} <span class="mono">${u.ac.tail}</span></div>
+      ${u.changed?`<div class="note">${esc(u.changed)}</div>`:""}
+      ${firstF&&firstF.u===u&&u.obj?`<div class="objective" style="margin-top:4px"><b>Next lesson objective</b>${esc(u.obj)}</div>`:""}
+      ${state.cancelling===u.id?`
+        <div class="confirm-box"><span>Cancel this lesson? It's more than 24 hours away, so there's no fee.</span>
+          <div class="li-actions"><button class="btn small danger" data-act="docancel" data-id="${u.id}">Cancel lesson</button><button class="btn small ghost" data-act="keep">Keep it</button></div></div>`
+      :`<div class="li-actions"><button class="btn small ghost" data-act="edit" data-id="${u.id}">Edit</button><button class="btn small ghost" data-act="resched" data-id="${u.id}">Reschedule</button><button class="btn small ghost" data-act="cancel" data-id="${u.id}">Cancel</button></div>`}
+    </div>`).join("")||`<div class="empty">Nothing upcoming.</div>`;
+  const past=state.past.map(p=>`
+    <div class="card li">
+      <div class="li-top"><span class="li-title">${fmtDate(p.date)}</span><span class="mono li-meta">${p.hrs.toFixed(1)} hr</span></div>
+      <div class="li-meta">${esc(p.lesson)} · ${p.ac.model}</div>
+      <div class="notes">${esc(p.notes)}</div>
+    </div>`).join("");
+  return `<h1>My lessons</h1>${seg}${state.upcoming.length>1&&!state.reassigned?`<button class="demo" data-act="reassign">Demo: the school reassigns your next lesson</button>`:""}<div class="list">${up}</div><h2>Past · instructor notes</h2><div class="list">${past}</div>`;
+}
+
+function viewProgress(){
+  const steps=[["G7","Stage 1 written exam"],["F17","Stage 1 flight check"],["F18","First supervised solo"],["F29","Stage 2 flight check"],["F33","First solo cross-country"],["F36","Long solo cross-country"],["G19","Final written exam"],["F39","Final flight check"]];
+  let seenNext=false;
+  const ms=[["SFAR 73 awareness training","done","Completed"]].concat(steps.map(([c,t])=>{const d=state.done.has(c);const cls=d?"done":seenNext?"":"next";if(!d)seenNext=true;return [t,cls,c]})).concat([["FAA knowledge test","",""],["FAA practical test","",""]]);
+  return `
+    <h1>Progress</h1>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b>Private Pilot – Helicopter</b><span class="mono">${state.hours.toFixed(1)} / 40 hr</span></div>
+      <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="40" aria-valuenow="${state.hours.toFixed(1)}"><i style="width:${Math.min(100,state.hours/40*100).toFixed(1)}%"></i></div>
+      <div class="hours">
+        <div><div class="note">Dual</div><div class="mono">${state.hours.toFixed(1)}</div></div>
+        <div><div class="note">Solo</div><div class="mono">0.0</div></div>
+        <div><div class="note">Lessons</div><div class="mono">${state.done.size} / 58</div></div>
+      </div>
+    </section>
+    <h2>Milestones</h2>
+    <section class="card ms">${ms.map(([t,c,w])=>`<div class="ms-i ${c}"><span class="ms-dot"></span><span>${t}</span><span class="when">${w}</span></div>`).join("")}</section>
+    <p class="note">Solo booking unlocks here once your solo endorsement is on file.</p>`;
+}
+
+function sheetHtml(){
+  const s=state.sheet;
+  if(s.type==="mx"){
+    const n=state.upcoming[0];
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Aircraft maintenance check">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">${n.ac.model} <span class="mono" style="font-size:16px;color:var(--muted)">${n.ac.tail}</span></h1><p class="sub">Airworthiness status for your ${dayLabel(n.date).toLowerCase()} lesson</p></div>
+      <div class="summary"><div><div class="k">Hobbs</div><div class="v">2,812.4</div></div><div><div class="k">Tach</div><div class="v">2,640.1</div></div></div>
+      <div class="card mx">${MX.map(m=>`<div class="mx-i"><span class="lbl">${m.lbl}</span><span class="val">${m.val}</span><span class="pill ${m.st}">${ST[m.st]}</span></div>`).join("")}</div>
+      <div class="lastin"><span class="k">Last checked in</span> ${whenStr(state.lastIn[n.ac.tail].at)} by ${state.lastIn[n.ac.tail].by}</div>
+      ${!state.lessonDay?`<div class="changed">Preview only. The check counts only when you do it on lesson day, after this aircraft's last flight has been checked in. A check done earlier doesn't count.</div><button class="btn ghost block" data-act="close">Done</button>`
+      :mxValid(n)?`<div class="pill ok" style="align-self:flex-start">Reviewed ${n.mxOk}</div><button class="btn ghost block" data-act="close">Done</button>`
+      :`<button class="btn primary block" data-act="mxok">I've reviewed maintenance status</button><p class="note" style="margin:0">Required before your instructor can dispatch the flight. Saved with the lesson record.</p>`}
+    </div></div>`;
+  }
+  if(s.type==="book"){
+    const ac=R22, est=(1.3*ac.rate).toFixed(0);
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Confirm booking">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">${s.resched?"Move lesson to":"Confirm lesson"}</h1><p class="sub">${fmtDate(s.date)} · ${fmtTime(s.start)} – ${fmtTime(s.start+2)}</p></div>
+      <div class="card"><dl class="facts">
+        <div><dt>Instructor</dt><dd>${s.instr?esc(s.instr)+", CFI-H":INSTRUCTOR}</dd></div>
+        <div><dt>Aircraft</dt><dd>${ac.model}</dd></div>
+        <div><dt>Est. aircraft</dt><dd class="mono">$${est}</dd></div>
+        <div><dt>Rate</dt><dd class="mono">$${ac.rate}/hr Hobbs</dd></div>
+      </dl></div>
+      <p class="note" style="margin:0">Estimate assumes 1.3 hr flight time. Free cancellation up to 24 hours before.</p>
+      <button class="btn primary block" data-act="confirm">${s.resched?"Move lesson":"Book lesson"}</button>
+      <button class="btn ghost block" data-act="close">Back</button>
+    </div></div>`;
+  }
+  const n=state.upcoming[0];
+  if(s.type==="dispatch"){
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Dispatch">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div class="steps"><span class="on">1 Dispatch</span><span>2 Fly</span><span>3 Check in &amp; pay</span></div>
+      <div><h1 style="font-size:22px">Start flight</h1><p class="sub">${n.ac.model} <span class="mono">${n.ac.tail}</span> · with ${n.instr}</p></div>
+      <div class="card mx">
+        <div class="mx-i"><span class="lbl">Aircraft maintenance</span><span class="val">Reviewed by you ${esc(n.mxOk)}, after the last check-in</span><span class="pill ok">Done</span></div>
+        <div class="mx-i"><span class="lbl">Student certificate and medical</span><span class="val">Current through Aug 2028</span><span class="pill ok">Current</span></div>
+        <div class="mx-i"><span class="lbl">SFAR 73 awareness training</span><span class="val">On file</span><span class="pill ok">Current</span></div>
+        <div class="mx-i"><span class="lbl">Flight risk assessment</span><span class="val">Low · 4 pts · completed by instructor</span><span class="pill ok">Low</span></div>
+      </div>
+      <h2>Starting times</h2>
+      <div class="summary">
+        <div><div class="k">Hobbs out</div><div class="v">${state.hobbs.toFixed(1)}</div></div>
+        <div><div class="k">Tach out</div><div class="v">${state.tach.toFixed(1)}</div></div>
+      </div>
+      <p class="note" style="margin:-4px 0 0">Locked from the last close-out. If the gauges don't match, tell your instructor before flying.</p>
+      <h2>Weight and balance</h2>
+      <div class="fields">
+        <label class="fld"><span>You (lb)</span><input id="wbStudent" class="mono" inputmode="numeric" value="${state.wb.stu}"></label>
+        <label class="fld"><span>Instructor (lb)</span><input id="wbInstr" class="mono" inputmode="numeric" value="${state.wb.ins}"></label>
+      </div>
+      ${fuelHtml()}
+      <div id="wbOut">${wbHtml()}</div>
+      <button class="btn ghost block" data-act="wbchart">View weight &amp; balance chart</button>
+      <label class="check"><input type="checkbox" id="wxOk" ${state.wx?"checked":""}> Weather reviewed with my instructor</label>
+      <div id="dispErr" class="err" hidden></div>
+      <button class="btn primary block" data-act="godispatch">Request dispatch</button>
+      <p class="note" style="margin:0">Your instructor approves the dispatch from their phone. Solo students dispatch on their own once endorsed.</p>
+    </div></div>`;
+  }
+  if(s.type==="checkin"){
+    const f=state.flight;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Check in aircraft">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div class="steps"><span class="done">1 Dispatch</span><span class="done">2 Fly</span><span class="on">3 Check in &amp; pay</span></div>
+      ${f.by==="instructor"?`<div class="asinstr"><b>Instructor view</b> · ${n.instr.split(",")[0]} is checking in. In the live system this is on the instructor's own login.</div>`:""}
+      <div><h1 style="font-size:22px">Check in ${n.ac.tail}</h1><p class="sub">Dispatched ${f.out}</p></div>
+      <div class="times">
+        <div class="tcol"><div class="th">Hobbs in</div>
+          <div class="tout"><span class="k">Out</span><span class="mono">${f.hobbsOut.toFixed(1)}</span></div>
+          <label class="tin"><span class="k">In</span><input id="hobbsIn" class="mono" inputmode="decimal" placeholder="Read gauge" value="${f.hobbsIn?f.hobbsIn.toFixed(1):""}"></label>
+          <div class="tdiff" id="hobbsDiff">${f.hobbsIn?"+"+(f.hobbsIn-f.hobbsOut).toFixed(1)+" hr":"&nbsp;"}</div></div>
+        <div class="tcol"><div class="th">Tach in</div>
+          <div class="tout"><span class="k">Out</span><span class="mono">${f.tachOut.toFixed(1)}</span></div>
+          <label class="tin"><span class="k">In</span><input id="tachIn" class="mono" inputmode="decimal" placeholder="Read gauge" value="${f.tachIn?f.tachIn.toFixed(1):""}"></label>
+          <div class="tdiff" id="tachDiff">${f.tachIn?"+"+(f.tachIn-f.tachOut).toFixed(1)+" hr":"&nbsp;"}</div></div>
+      </div>
+      <div class="fields">
+        <label class="fld"><span>Fuel added (gal)</span><input id="fuelAdd" class="mono" inputmode="decimal" value="0"></label>
+        <label class="fld"><span>Landings</span><input id="landings" class="mono" inputmode="numeric" value="9"></label>
+        <label class="fld"><span>Ground instruction (hr)</span><input id="groundHrs" class="mono" inputmode="decimal" placeholder="0.0" value="${f.groundHrs!=null?f.groundHrs.toFixed(1):""}"></label>
+        <div class="fld"><span>&nbsp;</span><div class="quick">${(()=>{const L=SYLMAP[n.code],sd=L&&L[6];return [0.3,0.5,1.0].filter(v=>v!==sd).slice(0,sd?2:3).map(v=>`<button type="button" class="qbtn" data-gq="${v}">${v.toFixed(1)}</button>`).join("")+(sd?`<button type="button" class="qbtn sy" data-gq="${sd}" title="Syllabus pre/post-flight discussion">${sd.toFixed(1)} syl</button>`:"")})()}</div></div>
+      </div>
+      <label class="fld"><span>Squawks (anything wrong with the aircraft)</span><textarea id="squawk" rows="2" placeholder="Leave blank if none"></textarea></label>
+      <div id="ciErr" class="err" hidden></div>
+      <button class="btn primary block" data-act="review">Review charges</button>
+    </div></div>`;
+  }
+  if(s.type==="pay"){
+    const c=s.charges, after=state.balance-c.total;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Pay for lesson">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div class="steps"><span class="done">1 Dispatch</span><span class="done">2 Fly</span><span class="on">3 Check in &amp; pay</span></div>
+      <div><h1 style="font-size:22px">Lesson charges</h1><p class="sub">${esc(n.lesson)}</p></div>
+      <div class="card"><table class="bill">
+        <tr><td>${n.ac.model} · <span class="mono">${c.hobbs.toFixed(1)}</span> hr Hobbs × $${n.ac.rate}</td><td class="mono">${money(c.aircraft)}</td></tr>
+        <tr><td>Flight instruction · ${c.rate===0?"no charge":`<span class="mono">${c.hobbs.toFixed(1)}</span> hr × $${c.rate}`}${c.rate!==INSTR_RATE?` <span class="pill ${c.rate===0?"ok":"warn"}" style="font-size:11px;padding:2px 8px">Adjusted</span>`:""}</td><td class="mono">${money(c.hobbs*c.rate)}</td></tr>
+        ${c.ground>0?`<tr><td>Ground instruction · ${c.rate===0?"no charge":`<span class="mono">${c.ground.toFixed(1)}</span> hr × $${c.rate}`}</td><td class="mono">${money(c.ground*c.rate)}</td></tr>`:""}
+        <tr class="tot"><td>Total</td><td class="mono">${money(c.total)}</td></tr>
+      </table></div>
+      ${state.flight.by==="instructor"?`
+      <h2>Instruction rate</h2>
+      <div class="presets three" role="group" aria-label="Instruction rate">
+        <button class="pre" data-rate="std" aria-pressed="${c.rate===INSTR_RATE&&state.flight.rateMode!=="custom"}"><b>$${INSTR_RATE}</b><span>Standard /hr</span></button>
+        <button class="pre" data-rate="custom" aria-pressed="${state.flight.rateMode==="custom"}"><b>Custom</b><span>Set $/hr</span></button>
+        <button class="pre" data-rate="free" aria-pressed="${c.rate===0&&state.flight.rateMode!=="custom"}"><b>$0</b><span>No charge</span></button>
+      </div>
+      ${state.flight.rateMode==="custom"?`<label class="fld"><span>Custom instruction rate ($/hr)</span><input id="rateIn" class="mono" inputmode="decimal" value="${c.rate}"></label>`:""}
+      <p class="note" style="margin:0">Only the instructor can change this, and only for this lesson. Changes are logged with their name for the owner.</p>`
+      :`<p class="note" style="margin:0">Instruction rate is set by your instructor.</p>`}
+      <h2>Pay with</h2>
+      <div class="opts" role="radiogroup">
+        <button class="opt" role="radio" aria-checked="${state.pay==="balance"}" data-pay="balance" ${after<0?"disabled":""}><b>Prepaid balance</b><span>${money(state.balance)} available · ${money(Math.max(after,0))} left after</span></button>
+        <button class="opt" role="radio" aria-checked="${state.pay==="tap"}" data-pay="tap"><b>Tap, swipe or insert</b><span>Card, Apple Pay or Google Pay at the front desk reader or your instructor's phone</span></button>
+      </div>
+      <button class="btn primary block" data-act="pay">${state.pay==="tap"?"Present card · "+money(c.total):"Pay "+money(c.total)+" from balance"}</button>
+      <p class="note" style="margin:0">No cards are stored. Pay from your prepaid account, or tap or swipe each time.</p>
+      <button class="btn ghost block" data-act="backtimes">Back to times</button>
+    </div></div>`;
+  }
+  if(s.type==="receipt"){
+    const c=s.charges;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Receipt">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div class="paid">Paid</div>
+      <div><h1 style="font-size:22px">${money(c.total)} · ${c.method}</h1><p class="sub">Receipt sent by text and email. Aircraft times updated.</p></div>
+      <div class="summary">
+        <div><div class="k">Logged</div><div class="v">${c.hobbs.toFixed(1)}${c.ground>0?" + "+c.ground.toFixed(1)+"g":""}</div></div>
+        <div><div class="k">Balance</div><div class="v">${money(state.balance)}</div></div>
+        <div><div class="k">Hobbs now</div><div class="v">${state.hobbs.toFixed(1)}</div></div>
+        <div><div class="k">100-hr left</div><div class="v">${(2654.3-state.tach).toFixed(1)} hr</div></div>
+      </div>
+      ${c.rate!==INSTR_RATE?`<p class="note" style="margin:0">Instruction rate set by ${esc(c.rateBy)}: $${INSTR_RATE} → $${c.rate}/hr for this lesson (logged).</p>`:""}
+      ${c.squawk?`<p class="note" style="margin:0">Squawk sent to maintenance: “${esc(c.squawk)}”</p>`:""}
+      <p class="note" style="margin:0">Your instructor's notes for this lesson will appear in My lessons.</p>
+      <button class="btn primary block" data-act="close">Done</button>
+    </div></div>`;
+  }
+  if(s.type==="edit"){
+    const u=state.upcoming.find(x=>x.id===s.id), d=s.draft;
+    const acOpts=[R22,R44], est=ac=>money(1.3*ac.rate);
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Edit booking">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">Edit booking</h1><p class="sub">${fmtDate(u.date)} · ${fmtTime(u.start)} – ${fmtTime(u.start+2)} · ${esc(u.lesson.split(" · ")[0])}</p></div>
+      <h2>Instructor</h2>
+      <div class="opts" role="radiogroup">${INSTRUCTORS.map(i=>{const av=instrFree(i,u);return `<button class="opt" role="radio" aria-checked="${d.instr===i.name}" data-ei="${esc(i.name)}" ${av?"":"disabled"}><b>${i.name}</b><span>${av?(i.name===u.instr?"Current instructor":"Available at this time"):"Not available at this time"}</span></button>`}).join("")}</div>
+      <h2>Aircraft</h2>
+      <div class="opts" role="radiogroup">${acOpts.map(a=>`<button class="opt" role="radio" aria-checked="${d.tail===a.tail}" data-ea="${a.tail}"><b>${a.model} <span class="mono" style="font-weight:400">${a.tail}</span></b><span>$${a.rate}/hr · est. ${est(a)} for 1.3 hr${a.tail===u.ac.tail?" · current aircraft":""}</span></button>`).join("")}</div>
+      ${d.tail!==u.ac.tail?`<div class="changed">Changing aircraft resets the maintenance check, and weight and balance will be figured for the new aircraft at dispatch.</div>`:""}
+      <button class="btn primary block" data-act="saveedit" ${d.tail===u.ac.tail&&d.instr===u.instr?"disabled style=\"opacity:.45;cursor:not-allowed\"":""}>Save changes</button>
+      <button class="btn ghost block" data-act="close">Cancel</button>
+      <p class="note" style="margin:0">Your instructor gets a text and email about the change, and your calendar updates.</p>
+    </div></div>`;
+  }
+  if(s.type==="bookground"){
+    const L=SYLMAP[s.code], cost=L[4]*INSTR_RATE;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Confirm ground lesson">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><span class="pill gpill">Ground</span><h1 style="font-size:22px;margin-top:8px">${esc(lessonName(s.code))}</h1><p class="sub">${fmtDate(s.date)} · ${fmtTime(s.start)} – ${fmtTime(s.start+L[4])}</p></div>
+      <div class="card"><dl class="facts">
+        <div><dt>Instructor</dt><dd>${INSTRUCTOR}</dd></div>
+        <div><dt>Location</dt><dd>Classroom</dd></div>
+        <div><dt>Length</dt><dd class="mono">${L[4].toFixed(1)} hr</dd></div>
+        <div><dt>Est. instruction</dt><dd class="mono">${money(cost)}</dd></div>
+      </dl></div>
+      <p class="note" style="margin:0">Charged after your instructor logs the lesson. Free cancellation up to 24 hours before.</p>
+      <button class="btn primary block" data-act="confirmg">Book ground lesson</button>
+      <button class="btn ghost block" data-act="close">Back</button>
+    </div></div>`;
+  }
+  if(s.type==="docs"){
+    const lbl={need:'<span class="pill warn">Needed</span>',review:'<span class="pill info">In review</span>',ok:'<span class="pill ok">Approved</span>'};
+    const done=DOCS.filter(d=>d.status==="ok").length;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="My documents">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">My documents</h1><p class="sub">${done} of ${DOCS.length} approved. Tap any item to upload or replace it.</p></div>
+      <div class="meter"><i style="width:${done/DOCS.length*100}%"></i></div>
+      <div class="doclist">${DOCS.map(d=>`<button class="docrow" data-doc="${d.id}">
+        <span class="dr-t"><b>${esc(d.n)}</b><span>${d.status==="need"?esc(d.why):d.status==="review"?"Uploaded "+esc(d.when)+" · waiting for review":esc(d.file)+(d.exp?" · expires "+fmtExp(d.exp):"")}</span></span>
+        ${lbl[d.status]}</button>`).join("")}</div>
+      ${DOCS.some(d=>d.status==="review")?`<div class="demo" style="cursor:default">In the demo, switch to Owner (top bar) to approve it. Come back here to see it marked Approved.</div>`:""}
+      <p class="note" style="margin:0">Photos and PDFs work. Your instructor reviews each one and you'll get a text when it's approved. Expiring documents show up here 30 days ahead.</p>
+      <button class="btn ghost block" data-act="close">Done</button>
+    </div></div>`;
+  }
+  if(s.type==="docup"){
+    const d=DOCS.find(x=>x.id===s.id), f=s.file;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Upload ${esc(d.n)}">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">${esc(d.n)}</h1><p class="sub">${esc(d.why)}</p></div>
+      ${f?`<div class="docprev">${f.url?`<img src="${f.url}" alt="Preview of ${esc(f.name)}">`:`<div class="pdf">PDF</div>`}<div><b>${esc(f.name)}</b><span class="note">${(f.size/1024).toFixed(0)} KB</span></div><button class="btn small ghost" data-act="docclear">Change</button></div>`
+      :`<div class="pickrow">
+        <label class="btn primary pick"><input type="file" id="docCam" accept="image/*" capture="environment" hidden>Take photo</label>
+        <label class="btn ghost pick"><input type="file" id="docFile" accept="image/*,application/pdf" hidden>Choose file</label></div>
+      <p class="note" style="margin:0">Lay it flat in good light so every word is readable. Front and back can go in one PDF.</p>`}
+      ${d.id==="med"?`<div class="fields"><label class="fld"><span>Class</span><select id="medCls"><option ${s.cls==="Third class"?"selected":""}>Third class</option><option ${s.cls==="Second class"?"selected":""}>Second class</option><option ${s.cls==="First class"?"selected":""}>First class</option></select></label><label class="fld"><span>Expires</span><input type="date" id="medExp" value="${s.exp||""}"></label></div>`:""}
+      <div id="docErr" class="err" ${s.err?"":"hidden"}>${esc(s.err||"")}</div>
+      <button class="btn primary block" data-act="docsend" ${f?"":"disabled"}>Send for review</button>
+      <button class="btn ghost block" data-act="docs">Back</button>
+    </div></div>`;
+  }
+  if(s.type==="safety"){
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Report a safety concern">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div><h1 style="font-size:22px">Report a safety concern</h1><p class="sub">Goes straight to the safety manager. Reports are used to fix problems, not to blame people.</p></div>
+      <label class="fld"><span>Type</span><select id="sfType"><option>Hazard</option><option>Near miss</option><option>Incident</option><option>Maintenance</option><option>Ground operations</option><option>Other</option></select></label>
+      <label class="fld"><span>What happened or what did you notice?</span><textarea id="sfText" rows="4" placeholder="Where, when, and what you saw"></textarea></label>
+      <label class="check"><input type="checkbox" id="sfAnon"> Submit anonymously</label>
+      <div id="sfErr" class="err" hidden></div>
+      <button class="btn primary block" data-act="sendsafety">Send report</button>
+      <button class="btn ghost block" data-act="close">Cancel</button>
+    </div></div>`;
+  }
+  if(s.type==="wbchart"){
+    const c=wbCalc();
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Weight and balance chart">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h1 style="font-size:22px">Weight &amp; balance</h1><p class="sub">${n.ac.model} <span class="mono">${n.ac.tail}</span> · takeoff to zero usable fuel</p></div><span class="pill ${c.st}">${c.st==="bad"?"Out of limits":c.st==="warn"?"Near limit":"In limits"}</span></div>
+      <div class="legend"><span><i class="lg-to"></i>Takeoff (TO)</span><span><i class="lg-ld"></i>Zero usable fuel (ZF)</span><span><i class="lg-env"></i>Envelope</span><span><i class="lg-max"></i>Max gross</span></div>
+      <h2>Longitudinal</h2>
+      <div class="card chart">${envChart("long",c)}</div>
+      <h2>Lateral</h2>
+      <div class="card chart">${envChart("lat",c)}</div>
+      <h2>Limit checks</h2>
+      <div class="card">${checksHtml(c)}</div>
+      <h2>Loading</h2>
+      ${wbTable(c)}
+      <p class="note" style="margin:0">Limits and arms from the Robinson POH; empty weight and CG from ${n.ac.tail}'s weight &amp; balance record. Aux fuel follows main (interconnected tanks). The PIC verifies against the POH.</p>
+      <button class="btn primary block" data-act="dispatch">Back to dispatch</button>
+    </div></div>`;
+  }
+  if(s.type==="email"){
+    const f=state.flight, c=f.wbSnap;
+    return `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-label="Dispatch email">
+      <div class="grab"></div><button class="xclose" data-act="close" aria-label="Close">✕</button>
+      <div class="mail">
+        <div class="mail-h">
+          <div><span class="k">From</span> AS&amp;S Scheduler &lt;dispatch@aerostratsllc.com&gt;</div>
+          <div><span class="k">To</span> J. Snuffy (student), ${n.instr.split(",")[0]} (instructor)</div>
+          <div><span class="k">Subject</span> <b>Dispatched: ${n.ac.tail} · ${esc(n.lesson.split(" · ")[0])} · ${f.out}</b></div>
+        </div>
+        <div class="mail-b">
+          <p style="margin:0">${n.ac.model} ${n.ac.tail} was dispatched at ${f.out} for ${esc(n.lesson)}.</p>
+          <table class="bill">
+            <tr><td>PIC / instructor</td><td>${n.instr}</td></tr>
+            <tr><td>Student</td><td>J. Snuffy</td></tr>
+            <tr><td>Hobbs / tach out</td><td class="mono">${f.hobbsOut.toFixed(1)} / ${f.tachOut.toFixed(1)}</td></tr>
+            <tr><td>Fuel on board</td><td class="mono">${(c.mainG+c.auxG).toFixed(1)} gal total (${c.mainG.toFixed(1)} main + ${c.auxG.toFixed(1)} aux)</td></tr>
+            <tr><td>Takeoff weight</td><td class="mono">${c.to.wt.toFixed(0)} lb</td></tr>
+            <tr><td>Takeoff CG (long / lat)</td><td class="mono">${c.to.long.toFixed(2)} / ${latStr(c.to.lat)}</td></tr>
+            <tr><td>Zero-fuel CG (long / lat)</td><td class="mono">${c.zf.long.toFixed(2)} / ${latStr(c.zf.lat)}</td></tr>
+            <tr><td>W&amp;B result</td><td>${c.st==="bad"?"Out of limits":"Within limits"}</td></tr>
+            <tr><td>Maintenance review</td><td>By student ${esc(n.mxOk)}, after last check-in (${whenStr(state.lastIn[n.ac.tail].at)})</td></tr>
+            <tr><td>Risk assessment</td><td>Low · 4 pts</td></tr>
+          </table>
+          <div class="chart">${envChart("long",c,true)}</div>
+          <div class="chart">${envChart("lat",c,true)}</div>
+          ${wbTable(c)}
+          <p class="note" style="margin:0">Expected back by ${fmtTime(n.start+2)}. Reply to this email or open the app to see the flight.</p>
+        </div>
+      </div>
+      <p class="note" style="margin:0">Preview of the email sent automatically at dispatch. The prototype doesn't send real email.</p>
+      <button class="btn ghost block" data-act="close">Close</button>
+    </div></div>`;
+  }
+  return "";
+}
+
+// Weight & balance data from the Robinson Weight & Balance app (POH Sections 2 and 6; empty weights from each aircraft's W&B record).
+const MODELS={
+  R22:{name:"R22 Beta II",maxGross:1370,minGross:920,seatMax:240,
+    main:{usable:16.9,arm:108.6,lat:-11.0}, aux:{usable:9.4,arm:103.8,lat:11.2},
+    auxTable:[[3.5,0],[4,0.2],[5,1],[6,1.7],[7,2.4],[8,3],[9,3.7],[10,4.3],[11,5],[12,5.7],[13,6.3],[14,7],[15,7.7],[16,8.4],[16.9,9.4]],
+    stu:{label:"Pilot / student (right seat)",arm:78.0,lat:10.7}, ins:{label:"Instructor (left seat)",arm:78.0,lat:-9.3},
+    envLong:[[95.5,920],[95.5,1275],[96.5,1370],[100.0,1370],[102.0,1175],[102.0,920]],
+    envLat:[[95.5,-0.8],[95.5,1.0],[98.0,2.6],[102.0,1.2],[102.0,-0.5],[98.0,-2.2],[97.0,-2.2]],
+    axes:{x:[95,103,1],y:[900,1400,100],lat:[-3,3,1]}},
+  R44:{name:"R44 Raven I",maxGross:2400,minGross:1550,seatMax:300,
+    main:{usable:29.5,arm:106.0,lat:-13.5}, aux:{usable:17.0,arm:102.0,lat:13.0},
+    auxTable:[[7,0],[8,0.8],[9,1.5],[10,2.3],[11,3],[12,3.8],[13,4.5],[14,5.3],[15,6],[16,6.8],[17,7.6],[18,8.3],[19,9.1],[20,9.8],[21,10.6],[22,11.3],[23,12.1],[24,12.8],[25,13.6],[26,14.4],[27,15.1],[28,15.9],[29,16.7],[29.5,17]],
+    stu:{label:"Pilot / student (front right)",arm:49.5,lat:12.2}, ins:{label:"Instructor (front left)",arm:49.5,lat:-10.4},
+    envLong:[[92.0,1550],[92.0,2200],[93.0,2400],[98.0,2400],[102.5,2000],[102.5,1550]],
+    envLat:[[92.0,-3.0],[92.0,3.0],[100.0,3.0],[102.5,1.5],[102.5,-1.5],[100.0,-3.0]],
+    axes:{x:[91,103,1],y:[1500,2500,100],lat:[-3,3,1]}}
+};
+const FLEET={
+  N7187K:{model:"R22",bew:895.2,arm:92706/895.2,lat:-354/895.2},
+  N931QA:{model:"R44",bew:1463.2,arm:154590.2/1463.2,lat:-164.9/1463.2}
+};
+const curAc=()=>FLEET[state.upcoming[0].ac.tail], curModel=()=>MODELS[curAc().model];
+function auxFromMain(m,g){const t=m.auxTable;if(g<=t[0][0])return 0;for(let i=1;i<t.length;i++){if(g<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return +(y0+(g-x0)*(y1-y0)/(x1-x0)).toFixed(2)}}return m.aux.usable}
+function rangeAt(poly,v,axis){const o=1-axis,h=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length];
+  if(p[axis]===q[axis]){if(Math.abs(p[axis]-v)<1e-9)h.push(p[o],q[o]);continue}
+  if((p[axis]-v)*(q[axis]-v)<=0)h.push(p[o]+(v-p[axis])*(q[o]-p[o])/(q[axis]-p[axis]))}
+  return h.length?[Math.min(...h),Math.max(...h)]:null}
+const inRange=(r,v)=>r&&v>=r[0]-1e-6&&v<=r[1]+1e-6;
+const latStr=v=>Math.abs(v)<0.005?"0.00":Math.abs(v).toFixed(2)+(v>0?" R":" L");
+function wbCalc(){
+  const w=state.wb, a=curAc(), m=curModel(), FL=6;
+  const mainG=Math.min(Math.max(w.fuel,0),m.main.usable), auxG=auxFromMain(m,mainG);
+  const rows=[["Basic empty weight",a.bew,a.arm,a.lat],[m.stu.label,w.stu,m.stu.arm,m.stu.lat],[m.ins.label,w.ins,m.ins.arm,m.ins.lat]];
+  const fuelRows=[["Main fuel ("+mainG.toFixed(1)+" gal)",mainG*FL,m.main.arm,m.main.lat],["Aux fuel ("+auxG.toFixed(1)+" gal)",auxG*FL,m.aux.arm,m.aux.lat]];
+  const sum=r=>{const wt=r.reduce((t,x)=>t+x[1],0),lm=r.reduce((t,x)=>t+x[1]*x[2],0),tm=r.reduce((t,x)=>t+x[1]*x[3],0);return{wt,lm,tm,long:lm/wt,lat:tm/wt}};
+  const zf=sum(rows), to=sum(rows.concat(fuelRows));
+  const checks=[], chk=(ok,t)=>checks.push({ok,t});
+  chk(to.wt<=m.maxGross+1e-9,`Takeoff weight ${to.wt.toFixed(1)} lb, max ${m.maxGross} lb`);
+  chk(zf.wt>=m.minGross-1e-9,`Zero-fuel weight ${zf.wt.toFixed(1)} lb, min ${m.minGross} lb`);
+  [[to,"Takeoff"],[zf,"Zero-fuel"]].forEach(([p,nm])=>{
+    const r=rangeAt(m.envLong,p.wt,1); chk(inRange(r,p.long),r?`${nm} long. CG ${p.long.toFixed(2)} in, limits ${r[0].toFixed(2)}–${r[1].toFixed(2)} in`:`${nm} weight is outside the envelope`);
+    const rl=rangeAt(m.envLat,p.long,0); chk(inRange(rl,p.lat),rl?`${nm} lat. CG ${latStr(p.lat)}, limits ${latStr(rl[0])} to ${latStr(rl[1])}`:`${nm} lat. CG can't be checked: long. CG outside limits`);
+  });
+  const seatBad=w.stu>m.seatMax||w.ins>m.seatMax;
+  if(seatBad)chk(false,`Max ${m.seatMax} lb per seat`);
+  const ok=checks.every(c=>c.ok);
+  const st=!ok?"bad":m.maxGross-to.wt<30?"warn":"ok";
+  return{rows,fuelRows,zf,to,checks,seatBad,st,mainG,auxG,max:m.maxGross};
+}
+function wbHtml(){
+  const c=wbCalc(), margin=c.max-c.to.wt, bad=c.checks.find(x=>!x.ok);
+  const msg=bad?bad.t:`${margin.toFixed(0)} lb under max gross · fuel ${(c.mainG+c.auxG).toFixed(1)} gal total`;
+  return `<div class="wb ${c.st}"><div><span class="mono" style="font-size:18px">${c.to.wt.toFixed(0)}</span> <span class="note">of ${c.max.toLocaleString()} lb</span></div><span class="pill ${c.st}">${c.st==="bad"?"Out of limits":c.st==="warn"?"Near limit":"In limits"}</span>
+    <div class="note" style="grid-column:1/-1">${esc(msg)} · CG <span class="mono">${c.to.long.toFixed(2)}</span> in / <span class="mono">${latStr(c.to.lat)}</span></div></div>`;
+}
+function envChart(kind,c,compact){
+  const m=curModel(), env=kind==="long"?m.envLong:m.envLat;
+  const [x0,x1,xs]=m.axes.x, [y0,y1,ys]=kind==="long"?m.axes.y:m.axes.lat;
+  const W=340,H=compact?210:250,L=50,Rr=12,T=16,B=36;
+  const sx=x=>L+(x-x0)/(x1-x0)*(W-L-Rr), sy=y=>T+(y1-y)/(y1-y0)*(H-T-B);
+  const cl=(v,a,b)=>Math.min(Math.max(v,a),b);
+  const yk=kind==="long"?"wt":"lat";
+  const P=p=>[sx(cl(p.long,x0,x1)),sy(cl(p[yk],y0,y1))];
+  const okP=p=>kind==="long"?inRange(rangeAt(m.envLong,p.wt,1),p.long):inRange(rangeAt(m.envLat,p.long,0),p.lat);
+  const pTo=P(c.to), pZf=P(c.zf);
+  const xt=[],yt=[];for(let v=x0;v<=x1+1e-9;v+=xs)xt.push(v);for(let v=y0;v<=y1+1e-9;v+=ys)yt.push(v);
+  const yl=v=>kind==="long"?v.toLocaleString():v===0?"0":Math.abs(v)+(v>0?"R":"L");
+  return `<svg viewBox="0 0 ${W} ${H}" class="env" role="img" aria-label="${kind==="long"?"Gross weight versus longitudinal CG":"Lateral CG versus longitudinal CG"}">
+    ${yt.map(y=>`<line x1="${L}" x2="${W-Rr}" y1="${sy(y)}" y2="${sy(y)}" class="grid"/><text x="${L-6}" y="${sy(y)+4}" text-anchor="end" class="tick">${yl(y)}</text>`).join("")}
+    ${xt.map((x,i)=>`<line x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H-B}" class="grid"/>${i%2===0?`<text x="${sx(x)}" y="${H-B+15}" text-anchor="middle" class="tick">${x}</text>`:""}`).join("")}
+    ${kind==="long"?`<line x1="${L}" x2="${W-Rr}" y1="${sy(m.maxGross)}" y2="${sy(m.maxGross)}" class="maxg"/>`:`<line x1="${L}" x2="${W-Rr}" y1="${sy(0)}" y2="${sy(0)}" class="zero"/>`}
+    <polygon points="${env.map(([x,y])=>sx(x)+","+sy(y)).join(" ")}" class="envp"/>
+    <line x1="${pTo[0]}" y1="${pTo[1]}" x2="${pZf[0]}" y2="${pZf[1]}" class="path"/>
+    <circle cx="${pZf[0]}" cy="${pZf[1]}" r="5.5" class="ld ${okP(c.zf)?"":"bad"}"/>
+    <circle cx="${pTo[0]}" cy="${pTo[1]}" r="6.5" class="to ${okP(c.to)?"":"bad"}"/>
+    <text x="${pTo[0]+9}" y="${pTo[1]-8}" class="ptl">TO</text><text x="${pZf[0]+9}" y="${pZf[1]+14}" class="ptl">ZF</text>
+    <text x="${W-Rr}" y="${H-3}" text-anchor="end" class="axl">Longitudinal CG (in from datum)</text>
+    <text x="${L}" y="${T-5}" class="axl">${kind==="long"?"Gross weight (lb)":"Lateral CG (in)"}</text>
+  </svg>`;
+}
+function wbTable(c){
+  const tr=(r,cls="")=>`<tr class="${cls}"><td>${esc(r[0])}</td><td class="mono">${r[1].toFixed(1)}</td><td class="mono">${r[2].toFixed(2)}</td><td class="mono">${r[3].toFixed(2)}</td></tr>`;
+  const tot=(l,p)=>tr([l,p.wt,p.long,p.lat],"tot");
+  return `<div class="tbl"><table class="bill wbt">
+    <tr><th>Item</th><th>Wt lb</th><th>Long arm</th><th>Lat arm</th></tr>
+    ${c.rows.map(r=>tr(r)).join("")}${tot("Zero usable fuel",c.zf)}${c.fuelRows.map(r=>tr(r)).join("")}${tot("Takeoff",c.to)}
+  </table></div>`;
+}
+const FUEL_PRESETS=[["Full",1],["3/4",.75],["1/2",.5],["1/4",.25]];
+const totalFromMain=(m,g)=>g+auxFromMain(m,g);
+function mainForTotal(m,T){let lo=0,hi=m.main.usable;for(let i=0;i<40;i++){const mid=(lo+hi)/2;if(totalFromMain(m,mid)<T)lo=mid;else hi=mid}return +hi.toFixed(2)}
+function fuelHtml(){
+  const m=curModel(), full=m.main.usable+m.aux.usable, g=state.wb.fuel, tot=totalFromMain(m,g);
+  return `<div class="fuelsel">
+    <div class="presets" role="group" aria-label="Total fuel">${FUEL_PRESETS.map(([l,f])=>{const T=+(full*f).toFixed(1),mg=mainForTotal(m,T);return `<button class="pre" data-fuel="${mg}" aria-pressed="${Math.abs(g-mg)<0.05}"><b>${l}</b><span class="mono">${T} gal</span></button>`}).join("")}</div>
+    <input type="range" id="fuelR" min="0" max="${full.toFixed(1)}" step="0.1" value="${tot.toFixed(1)}" aria-label="Total fuel gallons">
+    <div id="fuelRead" class="note">${fuelRead()}</div></div>`;
+}
+function fuelRead(){const m=curModel(),g=state.wb.fuel,a=auxFromMain(m,g),full=m.main.usable+m.aux.usable;return `Total <b class="mono">${(g+a).toFixed(1)}</b> of ${full.toFixed(1)} gal usable = <b class="mono">${((g+a)*6).toFixed(0)}</b> lb · main ${g.toFixed(1)} + aux ${a.toFixed(1)} (interconnected)`}
+function updateFuel(){
+  const r=document.getElementById("fuelRead"),o=document.getElementById("wbOut");
+  if(r)r.innerHTML=fuelRead(); if(o)o.innerHTML=wbHtml();
+  document.querySelectorAll(".pre").forEach(b=>b.setAttribute("aria-pressed",Math.abs(state.wb.fuel-+b.dataset.fuel)<0.05));
+}
+function calcCharges(f){
+  const n=state.upcoming[0], hobbs=f.hobbsTime, ground=f.groundHrs||0, instrHrs=hobbs+ground, rate=f.rate==null?INSTR_RATE:f.rate;
+  const aircraft=hobbs*n.ac.rate, instr=instrHrs*rate;
+  return {hobbs,ground,instrHrs,aircraft,instr,rate,rateBy:n.instr.split(",")[0],total:aircraft+instr};
+}
+function fmtExp(iso){const [y,m]=iso.split("-");return MON[+m-1]+" "+y}
+function takeFile(file){
+  if(!file)return;
+  if(file.size>10*1024*1024){state.sheet.err="That file is over 10 MB. Try a photo instead of a scan.";render();return}
+  if(state.sheet.file&&state.sheet.file.url)URL.revokeObjectURL(state.sheet.file.url);
+  state.sheet.file={name:file.name,size:file.size,url:file.type.startsWith("image/")?URL.createObjectURL(file):null};
+  render();
+}
+function checksHtml(c){return `<ul class="checks">${c.checks.map(x=>`<li class="${x.ok?"":"bad"}">${esc(x.t)}</li>`).join("")}</ul>`}
+const num=id=>parseFloat((document.getElementById(id)||{}).value);
+
+function toast(msg){state.toast=msg;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{state.toast=null;render()},2600)}
+
+document.getElementById("app").addEventListener("click",e=>{
+  const sl=!e.target.closest(".sblk")&&e.target.closest("[data-slane]");
+  if(sl){const r=sl.getBoundingClientRect(),h=Math.floor(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*48)/2,d=state.schedDay||today;
+    if(sl.dataset.sid==="N931QA"){toast("Lessons fly in the training aircraft, N7187K.");return}
+    if(sameDay(d,today)&&h<DEMO_NOW){toast("Pick a time later today.");return}
+    if(h+2>22){toast("Lessons need to finish by 10:00 PM.");return}
+    const who=sl.dataset.slane==="p"?sl.dataset.sid:INSTRUCTOR.split(",")[0];
+    if(!schedFree(d,h,h+2,"N7187K",who)){toast(`${fmtTime(h)}–${fmtTime(h+2)} overlaps another booking for the R22 or ${who}. Pick an open spot.`);return}
+    state.sheet={type:"book",date:d,start:h,instr:who,fromSched:true};render();return}
+  const sj=e.target.closest("[data-sjump],[data-sday]");
+  if(sj){if(sj.dataset.sday){state.schedDay=new Date(sj.dataset.sday);STL_X=-1;render();return}
+    const w=document.querySelector(".stl-wrap"),ln=w.querySelector(".slane"),k=sj.dataset.sjump,px=ln.offsetWidth/24;
+    w.scrollTo({left:k==="now"?Math.max(0,DEMO_NOW*px-(w.clientWidth-w.querySelector(".stl-lbl").offsetWidth)*.25):(+k)*px,behavior:"smooth"});return}
+  const t=e.target.closest("[data-lx],[data-doc],[data-tab],[data-act],[data-day],[data-slot],[data-pay],[data-ei],[data-ea],[data-fuel],[data-rate],[data-mode],[data-gq],[data-gsel],[data-gslot],[data-lview],[data-bookg],[data-bookf]");
+  if(!t)return;
+  if(t.dataset.gq){const g=document.getElementById("groundHrs");if(g)g.value=(+t.dataset.gq).toFixed(1);return}
+  if(t.dataset.lx){state.openLesson=state.openLesson===t.dataset.lx?null:t.dataset.lx;render();const el=document.querySelector(`[data-lx="${t.dataset.lx}"]`);if(el)el.focus({preventScroll:true});return}
+  if(t.dataset.doc){const d=DOCS.find(x=>x.id===t.dataset.doc);state.sheet={type:"docup",id:d.id,file:null,exp:d.exp||"",cls:d.cls||"Third class"};render();return}
+  if(t.dataset.mode){state.bookMode=t.dataset.mode;render();return}
+  if(t.dataset.gsel){state.gSel=t.dataset.gsel;render();return}
+  if(t.dataset.gslot){state.sheet={type:"bookground",code:state.gSel,date:state.bookDay,start:+t.dataset.gslot};render();return}
+  if(t.dataset.lview){state.lessonsView=t.dataset.lview;render();return}
+  if(t.dataset.bookg){state.bookMode="ground";state.gSel=t.dataset.bookg;state.tab="book";render();return}
+  if(t.dataset.bookf){state.bookMode="flight";state.tab="book";render();return}
+  if(t.dataset.fuel){state.wb.fuel=+t.dataset.fuel;const r=document.getElementById("fuelR");if(r)r.value=totalFromMain(curModel(),state.wb.fuel).toFixed(1);updateFuel();return}
+  if(t.dataset.pay){state.pay=t.dataset.pay;render();return}
+  if(t.dataset.ei){state.sheet.draft.instr=t.dataset.ei;render();return}
+  if(t.dataset.ea){state.sheet.draft.tail=t.dataset.ea;render();return}
+  const a0=t.dataset.act;
+  if(a0==="edit"){const u=state.upcoming.find(x=>x.id===+t.dataset.id);state.sheet={type:"edit",id:u.id,draft:{instr:u.instr,tail:u.ac.tail}};render();return}
+  if(a0==="saveedit"){
+    const s=state.sheet,u=state.upcoming.find(x=>x.id===s.id),parts=[];
+    if(s.draft.instr!==u.instr){parts.push("instructor to "+s.draft.instr.split(",")[0]);u.instr=s.draft.instr}
+    if(s.draft.tail!==u.ac.tail){u.ac=s.draft.tail===R44.tail?R44:R22;parts.push("aircraft to "+u.ac.model+" "+u.ac.tail);u.mxOk=false;u.mxAt=null}
+    if(!parts.length)return;
+    u.changed="Changed by you: "+parts.join(" and ")+".";
+    state.sheet=null;render();toast("Booking updated · instructor notified · calendar updated");return}
+  if(a0==="reassign"){
+    const u=state.upcoming.slice(1).find(x=>x.date.getDay()===4)||state.upcoming[1];u.instr="M. Houston, CFI-H";u.changed="Changed by AS&S: instructor changed to M. Houston. You were notified by text and email.";
+    state.reassigned=true;render();toast("Text: Your "+fmtDate(u.date)+" lesson is now with M. Houston.");return}
+  if(a0==="lessonday"){state.lessonDay=true;const n=state.upcoming[0],d=new Date(Date.now()-50*60000);state.lastIn[n.ac.tail]={at:d,by:"J. Nichols (tour flight)"};render();toast("It's lesson day. Do the aircraft check, then start the flight.");return}
+  if(a0==="dispatch"){state.sheet={type:"dispatch"};render();return}
+  if(a0==="confirmg"){const s2=state.sheet;state.ground.push({id:++lessonId,code:s2.code,date:s2.date,start:s2.start,dur:SYLMAP[s2.code][4],instr:INSTRUCTOR});state.sheet=null;state.tab="lessons";state.lessonsView="schedule";render();toast("Ground lesson booked · added to "+state.calendar);return}
+  if(a0==="cancelg"){state.cancelling="g"+t.dataset.gid;render();return}
+  if(a0==="docancelg"){state.ground=state.ground.filter(g=>g.id!==+t.dataset.gid);state.cancelling=null;render();toast("Ground lesson cancelled · removed from your calendar");return}
+  if(a0==="safety"){state.sheet={type:"safety"};render();return}
+  if(a0==="docs"){state.sheet={type:"docs"};render();return}
+  if(a0==="docclear"){if(state.sheet.file&&state.sheet.file.url)URL.revokeObjectURL(state.sheet.file.url);state.sheet.file=null;render();return}
+  if(a0==="docsend"){const s2=state.sheet,d=DOCS.find(x=>x.id===s2.id);
+    if(d.id==="med"){const ex=document.getElementById("medExp").value,er=document.getElementById("docErr");
+      if(!ex){er.textContent="Enter the expiration date printed on the medical.";er.hidden=false;return}
+      if(new Date(ex)<today){er.textContent="That medical has expired. Upload your current one.";er.hidden=false;return}
+      d.exp=ex;d.cls=document.getElementById("medCls").value}
+    d.status="review";d.file=s2.file.name;if(d.id==="spc"){const dd=D.get("docs",{});dd.spc="review";D.set("docs",dd)}d.when=MON[today.getMonth()]+" "+today.getDate();
+    state.sheet={type:"docs"};render();toast("Sent to "+INSTRUCTOR.split(",")[0]+" for review");return}
+  if(a0==="docapprove"){DOCS.forEach(d=>{if(d.status==="review")d.status="ok"});render();toast("Text: Your documents were approved.");return}
+  if(a0==="sendsafety"){const t=document.getElementById("sfText").value.trim();if(!t){const e2=document.getElementById("sfErr");e2.textContent="Describe what happened before sending.";e2.hidden=false;return}
+    const anon=document.getElementById("sfAnon").checked;state.sheet=null;render();toast(anon?"Anonymous safety report sent. Thank you.":"Safety report sent. You'll get updates as it's reviewed.");return}
+  if(a0==="wbchart"){state.sheet={type:"wbchart"};render();return}
+  if(a0==="email"){state.sheet={type:"email"};render();return}
+  if(a0==="godispatch"){
+    const w=state.wb, err=document.getElementById("dispErr"), c=wbCalc();
+    let m="";
+    if(!(w.stu>0&&w.ins>0&&w.fuel>=0))m="Enter both weights and the fuel on board.";
+    else if(c.st==="bad")m="Weight and balance is out of limits. Open the chart, then reduce fuel or adjust the load.";
+    else if(!state.wx)m="Review the weather with your instructor first.";
+    if(m){err.textContent=m;err.hidden=false;return}
+    state.flight={phase:"flying",out:nowTime(),hobbsOut:state.hobbs,tachOut:state.tach,wb:{...w},wbSnap:c};
+    state.sheet=null;render();toast("Dispatched. Flight info and W&B emailed to you and your instructor.");return}
+  if(a0==="checkin"){state.flight.by="student";state.flight.rate=null;state.flight.rateMode=null;state.sheet={type:"checkin"};render();return}
+  if(a0==="backtimes"){state.sheet={type:"checkin"};render();return}
+  if(a0==="checkin-instr"){state.flight.by="instructor";state.sheet={type:"checkin"};render();return}
+  if(t.dataset.rate){const f=state.flight;if(f.by!=="instructor")return;
+    if(t.dataset.rate==="std"){f.rate=INSTR_RATE;f.rateMode=null}else if(t.dataset.rate==="free"){f.rate=0;f.rateMode=null}else f.rateMode="custom";
+    state.sheet.charges=calcCharges(f);render();return}
+  if(a0==="review"){
+    const f=state.flight,hi=num("hobbsIn"),ti=num("tachIn"),err=document.getElementById("ciErr");
+    let m="";
+    if(isNaN(hi)||isNaN(ti))m="Enter the Hobbs and tach readings from the gauges.";
+    else if(!(hi>f.hobbsOut))m="Hobbs in must be higher than Hobbs out ("+f.hobbsOut.toFixed(1)+").";
+    else if(!(ti>f.tachOut))m="Tach in must be higher than tach out ("+f.tachOut.toFixed(1)+").";
+    else if(hi-f.hobbsOut>2.5)m="That's more than the 2-hour block. Check the Hobbs reading.";
+    if(m){err.textContent=m;err.hidden=false;return}
+    const hobbs=Math.round((hi-f.hobbsOut)*10)/10, gv=parseFloat(document.getElementById("groundHrs").value);
+    if(!isNaN(gv)&&(gv<0||gv>4)){err.textContent="Ground instruction should be between 0 and 4 hours.";err.hidden=false;return}
+    f.hobbsTime=hobbs;f.groundHrs=isNaN(gv)?0:Math.round(gv*10)/10;
+    f.hobbsIn=hi;f.tachIn=ti;f.squawk=document.getElementById("squawk").value.trim();
+    const charges=calcCharges(f);
+    state.pay=state.balance<charges.total?"tap":"balance";
+    state.sheet={type:"pay",charges};render();return}
+  if(a0==="pay"){
+    const f=state.flight,c=state.sheet.charges,n=state.upcoming.shift();
+    if(state.pay==="balance")state.balance=Math.round((state.balance-c.total)*100)/100;
+    c.method=state.pay==="balance"?"Prepaid balance":"Card (tap)";c.squawk=f.squawk;
+    state.hobbs=f.hobbsIn;state.tach=f.tachIn;state.lastIn[n.ac.tail]={at:new Date(),by:"J. Snuffy"};state.hours=Math.round((state.hours+c.hobbs)*10)/10;state.lessonsDone++;if(n.code)state.done.add(n.code);
+    state.past.unshift({date:today,start:n.start,ac:n.ac,lesson:n.lesson,hrs:c.hobbs,notes:"Instructor notes pending."});
+    state.flight=null;state.lessonDay=false;state.wx=false;
+    D.set("alexBal",state.balance);
+    D.push("lessons",{code:n.code,fl:c.hobbs,gr:c.ground,rate:c.rate,total:Math.round(c.total*100)/100,method:c.method,instr:n.instr.split(",")[0],at:new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}),hobbsIn:state.hobbs,tachIn:state.tach});
+    state.sheet={type:"receipt",charges:c};render();return}
+  if(t.dataset.act==="close"&&e.target!==t&&!e.target.closest("button"))return; // clicks inside sheet
+  if(t.dataset.tab){state.tab=t.dataset.tab;state.sheet=null;state.cancelling=null;if(t.dataset.tab!=="book")state.resched=null;render();return}
+  if(t.dataset.day){state.bookDay=new Date(t.dataset.day);render();return}
+  if(t.dataset.slot){state.sheet={type:"book",date:state.bookDay,start:+t.dataset.slot,resched:state.resched||null};render();return}
+  const act=t.dataset.act, id=+t.dataset.id;
+  if(act==="mine"){state.tab="lessons";render();return}
+  if(act==="mx"){state.sheet={type:"mx"};render()}
+  else if(act==="mxok"){const now=new Date(),n=state.upcoming[0];n.mxAt=now;n.mxOk="today at "+now.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});render();toast("Maintenance review saved with the lesson")}
+  else if(act==="otherflight"){const n=state.upcoming[0];state.lastIn[n.ac.tail]={at:new Date(),by:"M. Houston (rental)"};render();toast(n.ac.tail+" was just checked in from another flight. Your check needs redoing.")}
+  else if(act==="close"){state.sheet=null;render()}
+  else if(act==="confirm"){
+    const s=state.sheet;
+    if(s.resched){const u=state.upcoming.find(x=>x.id===s.resched);u.date=s.date;u.start=s.start;u.mxOk=false;u.mxAt=null;u.recurring=false;state.resched=null}
+    else{const c=nextFlightCode()||"F30",ins=s.instr?s.instr+", CFI-H":INSTRUCTOR;state.upcoming.push({id:++lessonId,code:c,date:s.date,start:s.start,ac:R22,lesson:lessonName(c),obj:"Objective and completion standards for "+c+" are in the Robinson Flight Training Guide.",mxOk:false,instr:ins});
+      if(sameDay(s.date,today))D.push("newBookings",{id:"s"+Date.now(),ac:"N7187K",who:ins.split(",")[0],s:s.start,e:s.start+2,type:"dual",t:ME_NAME+" · "+c,st:"up",amt:0})}
+    state.upcoming.sort((a,b)=>a.date-b.date||a.start-b.start);
+    state.sheet=null;if(!s.fromSched)state.tab="lessons";render();toast(s.resched?"Lesson moved · calendar updated":"Lesson booked · added to "+state.calendar)}
+  else if(act==="cancel"){state.cancelling=id;render()}
+  else if(act==="keep"){state.cancelling=null;render()}
+  else if(act==="docancel"){state.upcoming=state.upcoming.filter(u=>u.id!==id);state.cancelling=null;render();toast("Lesson cancelled · removed from your calendar")}
+  else if(act==="resched"){state.resched=id;state.tab="book";render()}
+});
+document.getElementById("app").addEventListener("keydown",e=>{const t=e.target.closest&&e.target.closest("[data-lx]");if(t&&(e.key==="Enter"||e.key===" ")&&e.target===t){e.preventDefault();t.click()}});
+document.getElementById("app").addEventListener("toggle",e=>{const d=e.target;if(d.dataset&&d.dataset.stage){d.open?state.openStages.add(d.dataset.stage):state.openStages.delete(d.dataset.stage)}},true);
+document.getElementById("app").addEventListener("input",e=>{
+  if(["wbStudent","wbInstr"].includes(e.target.id)){
+    state.wb.stu=num("wbStudent")||0;state.wb.ins=num("wbInstr")||0;
+    const o=document.getElementById("wbOut");
+    if(o)o.innerHTML=wbHtml();
+  }
+  if(e.target.id==="hobbsIn"||e.target.id==="tachIn"){const f=state.flight,k=e.target.id==="hobbsIn"?"hobbs":"tach",out=f[k+"Out"],v=parseFloat(e.target.value),d=document.getElementById(k+"Diff");
+    if(d){if(isNaN(v)){d.innerHTML="&nbsp;";d.className="tdiff"}else{const df=v-out;d.textContent=df>0?"+"+df.toFixed(1)+" hr":"Must be above "+out.toFixed(1);d.className="tdiff"+(df>0?"":" bad")}}}
+  if(e.target.id==="fuelR"){state.wb.fuel=mainForTotal(curModel(),+e.target.value);updateFuel()}
+});
+document.getElementById("app").addEventListener("change",e=>{if(e.target.id==="wxOk")state.wx=e.target.checked;
+  if(e.target.id==="docCam"||e.target.id==="docFile"){takeFile(e.target.files&&e.target.files[0]);return}
+  if(e.target.id==="medExp"&&state.sheet)state.sheet.exp=e.target.value;
+  if(e.target.id==="medCls"&&state.sheet)state.sheet.cls=e.target.value;
+  if(e.target.id==="rateIn"&&state.flight&&state.flight.by==="instructor"){const v=parseFloat(e.target.value);state.flight.rate=isNaN(v)||v<0?INSTR_RATE:Math.round(v*100)/100;state.sheet.charges=calcCharges(state.flight);render()}});
+(function syncFromDemo(){
+  const dd=D.get("docs",{}),spc=DOCS.find(x=>x.id==="spc");
+  if(dd.spc){spc.status=dd.spc;if(dd.spc!=="need"){spc.file=spc.file||"student-pilot-certificate.jpg";spc.when=spc.when||MON[today.getMonth()]+" "+today.getDate()}}
+  const bal=D.get("alexBal",null);if(bal!=null)state.balance=bal;
+  D.get("groundDone",[]).forEach(c=>{state.ground=state.ground.filter(g=>g.code!==c);state.done.add(c)});
+  D.get("lessons",[]).forEach(l=>{const i=state.upcoming.findIndex(u=>u.code===l.code);if(i<0)return;const n=state.upcoming.splice(i,1)[0];
+    state.done.add(l.code);state.hours=Math.round((state.hours+l.fl)*10)/10;state.lessonsDone++;
+    state.past.unshift({date:today,start:n.start,ac:n.ac,lesson:n.lesson,hrs:l.fl,notes:"Instructor notes pending."});
+    if(l.hobbsIn){state.hobbs=l.hobbsIn;state.tach=l.tachIn}state.lastIn[n.ac.tail]={at:new Date(),by:"J. Snuffy"};state.lessonDay=false});
+})();
+render();
+})();
+</script></body></html>
